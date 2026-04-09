@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -348,4 +349,25 @@ public class PlayerMovement : MonoBehaviour
     // Silah alınınca bu çağrılır
     public void EquipWeapon()
         => animator.SetLayerWeight(1, 1f);
+
+    public void BoostSpeed(float duration)
+    {
+        StartCoroutine(SpeedRoutine(3f, duration)); 
+    }
+
+    private IEnumerator SpeedRoutine(float boostAmount, float duration)
+    {
+        // 1. Hızı artır
+        walkSpeed += boostAmount;
+        runSpeed += boostAmount;
+        Debug.Log("<color=cyan>Enerji İçildi! Karakter hızlandı.</color>");
+
+        // 2. Belirtilen süre kadar bekle (Örn: 30 saniye)
+        yield return new WaitForSeconds(duration);
+
+        // 3. Süre bitince hızı geri al
+        walkSpeed -= boostAmount;
+        runSpeed -= boostAmount;
+        Debug.Log("<color=cyan>Enerji bitti. Hız normale döndü.</color>");
+    }
 }
