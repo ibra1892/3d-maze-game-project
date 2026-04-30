@@ -3,23 +3,24 @@ using UnityEngine;
 public class ItemPickup : MonoBehaviour
 {
     [Header("Ayarlar")]
-    public float     pickupRadius = 2f;
-    public KeyCode   pickupKey    = KeyCode.E;
-    public LayerMask itemLayer;
+    public float   pickupRadius = 2f;
+    public KeyCode pickupKey    = KeyCode.E;
 
     [HideInInspector] public int  totalAmmo = 0;
     [HideInInspector] public bool hasWeapon = false;
 
-    private PlayerMovement  player;
-    private Animator         anim;
-    private InventoryUI inventory;
-    
+    private PlayerMovement player;
+    private Animator       anim;
+    private InventoryUI    inventory;
+    private WeaponManager  weaponManager;
+
     void Start()
     {
-        player = GetComponent<PlayerMovement >();
-        if(player == null) player = Object.FindFirstObjectByType<PlayerMovement>();
-        anim   = GetComponentInChildren<Animator>();
-        inventory = Object.FindFirstObjectByType<InventoryUI>();
+        player        = GetComponent<PlayerMovement>();
+        if (player == null) player = Object.FindFirstObjectByType<PlayerMovement>();
+        anim          = GetComponentInChildren<Animator>();
+        inventory     = Object.FindFirstObjectByType<InventoryUI>();
+        weaponManager = Object.FindFirstObjectByType<WeaponManager>();
     }
 
     void Update()
@@ -31,11 +32,9 @@ public class ItemPickup : MonoBehaviour
     void TryPickup()
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, pickupRadius);
-        Debug.Log($"Bulunan obje sayısı: {hits.Length}");
 
-        // Item scripti olan en yakın objeyi bul
         Item nearestItem = null;
-        float minDist = float.MaxValue;
+        float minDist    = float.MaxValue;
 
         foreach (Collider c in hits)
         {
@@ -46,36 +45,46 @@ public class ItemPickup : MonoBehaviour
             if (d < minDist) { minDist = d; nearestItem = item; }
         }
 
-        if (nearestItem == null)
-        {
-            Debug.Log("Yakında Item yok!");
-            return;
-        }
+        if (nearestItem == null) return;
 
+        // Alma animasyonu + hareket kilidi
         anim.SetTrigger("Lift");
-
         player.canMove = false;
         Invoke(nameof(EnableMovement), 1.5f);
-        
-        if(nearestItem.itemType == ItemType.Ammo)
+
+        switch (nearestItem.itemType)
         {
-            inventory.AddItem(nearestItem.itemType, nearestItem.ammoCount);
-        } else
-        {
-            inventory.AddItem(nearestItem.itemType, 1);
+            case ItemType.Bandage:
+                inventory.AddItem(ItemType.Bandage, 1);
+                Debug.Log("Bandaj alındı!");
+                break;
+
+            case ItemType.EnergyDrink:
+                inventory.AddItem(ItemType.EnergyDrink, 1);
+                Debug.Log("Enerji içeceği alındı!");
+                break;
+
+            case ItemType.Ammo:
+                totalAmmo += nearestItem.ammoCount;
+                inventory.AddItem(ItemType.Ammo, nearestItem.ammoCount);
+                Debug.Log($"Mermi alındı! Toplam: {totalAmmo}");
+                break;
+
+            case ItemType.Weapon:
+                hasWeapon = true;
+                weaponManager?.OnWeaponPickedUp();
+                Debug.Log("Silah alındı! 1 tuşuyla kuşan.");
+                break;
         }
 
         Destroy(nearestItem.gameObject);
     }
 
+    void EnableMovement() => player.canMove = true;
+
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, pickupRadius);
-    }
-
-    void EnableMovement()
-    {
-        player.canMove = true;
     }
 }
