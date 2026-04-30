@@ -13,7 +13,7 @@ public class HUDManager : MonoBehaviour
     public TMP_Text staminaText;
 
     [Header("Ammo")]
-    public TMP_Text ammoText; // Inspector'dan az önce oluşturduğumuz AmmoText'i buraya sürükle
+    public TMP_Text ammoText;
 
     private PlayerMovement player;
     private float hpBarMaxWidth;
