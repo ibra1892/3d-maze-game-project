@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -21,25 +20,21 @@ public class ItemIconEntry
 
 public class InventoryUI : MonoBehaviour
 {
-    [Header("References")]
-    public GameObject      inventoryPanel;
-    public GameObject      slotPrefab;
-    public Transform       slotParent;
-    public PlayerMovement  player;
+    [Header("Referanslar")]
+    public GameObject     inventoryPanel;
+    public GameObject     slotPrefab;
+    public Transform      slotParent;
+    public PlayerMovement player;
 
-    [Header("Icons")]
+    [Header("İkonlar")]
     public List<ItemIconEntry> itemIcons = new List<ItemIconEntry>();
 
-    [Header("Bandage")]
+    [Header("Bandaj")]
     public float healAmount = 30f;
 
-    [Header("Energy Drink")]
-    public float energyDuration  = 10f;   // saniye
-    public float energySpeedBonus = 2f;   // ekstra hız
-    public float energyStaminaBonus = 999f; // stamina bitmiyor
-
-    [Header("Weapon")]
-    public bool hasWeapon = false;
+    [Header("Enerji İçeceği")]
+    public float energyDuration  = 10f;
+    public float energySpeedBonus = 2f;
 
     private bool isOpen = false;
     private List<InventoryItem> items = new List<InventoryItem>();
@@ -48,9 +43,8 @@ public class InventoryUI : MonoBehaviour
     void Start()
     {
         inventoryPanel.SetActive(false);
-
         if (player == null)
-            player = player = Object.FindFirstObjectByType<PlayerMovement>();
+            player = Object.FindFirstObjectByType<PlayerMovement>();
     }
 
     void Update()
@@ -63,34 +57,23 @@ public class InventoryUI : MonoBehaviour
     {
         isOpen = !isOpen;
         inventoryPanel.SetActive(isOpen);
-        Cursor.lockState = isOpen ? CursorLockMode.None  : CursorLockMode.Locked;
+        Cursor.lockState = isOpen ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible   = isOpen;
         if (isOpen) RefreshUI();
     }
 
     public void AddItem(ItemType type, int amount = 1)
     {
-        if(type == ItemType.Ammo)
-        {
-            if(player != null)
-            {
-                player.currentAmmo += amount;
-                Debug.Log("Mermi toplandı! Yeni mermi: " + player.currentAmmo);
-            }
-            return;
-        }
-
-        if(type == ItemType.Weapon)
-        {
-            hasWeapon = true;
-            if(player != null) player.EquipWeapon();
-        }
-
         InventoryItem existing = items.Find(i => i.itemType == type);
         if (existing != null)
             existing.count += amount;
         else
-            items.Add(new InventoryItem { itemType = type, count = amount, displayName = GetDisplayName(type) });
+            items.Add(new InventoryItem
+            {
+                itemType    = type,
+                count       = amount,
+                displayName = GetDisplayName(type)
+            });
 
         if (isOpen) RefreshUI();
     }
@@ -102,16 +85,15 @@ public class InventoryUI : MonoBehaviour
 
         foreach (InventoryItem item in items)
         {
-            InventoryItem captured = item; // closure için
+            InventoryItem captured = item;
 
             GameObject slot = Instantiate(slotPrefab, slotParent);
             slot.SetActive(true);
 
             RectTransform rt = slot.GetComponent<RectTransform>();
             rt.localScale = Vector3.one;
-            rt.sizeDelta = new Vector2(90, 90);
+            rt.sizeDelta  = new Vector2(90, 90);
 
-            // İkon
             Image icon = slot.transform.Find("Icon")?.GetComponent<Image>();
             if (icon != null)
             {
@@ -119,12 +101,10 @@ public class InventoryUI : MonoBehaviour
                 if (sp != null) { icon.sprite = sp; icon.color = Color.white; icon.preserveAspect = true; }
             }
 
-            // Yazı
             Text label = slot.GetComponentInChildren<Text>();
             if (label != null)
                 label.text = $"{item.displayName}\nx{item.count}";
 
-            // Tıklama
             Button btn = slot.GetComponent<Button>();
             if (btn == null) btn = slot.AddComponent<Button>();
             btn.onClick.AddListener(() => OnSlotClicked(captured, slot));
@@ -137,80 +117,45 @@ public class InventoryUI : MonoBehaviour
     {
         if (item.count <= 0) return;
 
-        // Tıklama animasyonu
         StartCoroutine(SlotClickAnimation(slot));
 
         switch (item.itemType)
         {
             case ItemType.Bandage:
                 player.Heal(healAmount);
-                if(player.animator != null) player.animator.SetBool("IsHealing", true);
+                if (player.animator != null) player.animator.SetBool("IsHealing", true);
+                Invoke(nameof(StopHealing), 2f);
                 Debug.Log($"Bandaj kullanıldı: +{healAmount} HP");
-                Invoke(nameof(StopHealing), 2f); // 2 saniye sonra animasyonu bitir
                 break;
 
             case ItemType.EnergyDrink:
-                StartCoroutine(EnergyEffect());
+                player.BoostSpeed(energyDuration);
                 Debug.Log($"Enerji içeceği kullanıldı! {energyDuration}sn sürecek.");
                 break;
         }
 
-        // Adedi azalt
         item.count--;
-        if (item.count <= 0)
-            items.Remove(item);
-
+        if (item.count <= 0) items.Remove(item);
         RefreshUI();
     }
 
-    // ─── Slot tıklama animasyonu (küçül → büyü) ───
     IEnumerator SlotClickAnimation(GameObject slot)
     {
         if (slot == null) yield break;
-
         Vector3 original = slot.transform.localScale;
         Vector3 small    = original * 0.85f;
-        float   duration = 0.08f;
+        float   dur      = 0.08f;
         float   t        = 0f;
 
-        // Küçül
-        while (t < duration)
-        {
-            if (slot == null) yield break;
-            slot.transform.localScale = Vector3.Lerp(original, small, t / duration);
-            t += Time.deltaTime;
-            yield return null;
-        }
-
+        while (t < dur) { if (slot == null) yield break; slot.transform.localScale = Vector3.Lerp(original, small, t / dur); t += Time.deltaTime; yield return null; }
         t = 0f;
-
-        // Büyü
-        while (t < duration)
-        {
-            if (slot == null) yield break;
-            slot.transform.localScale = Vector3.Lerp(small, original, t / duration);
-            t += Time.deltaTime;
-            yield return null;
-        }
-
-        if (slot != null)
-            slot.transform.localScale = original;
+        while (t < dur) { if (slot == null) yield break; slot.transform.localScale = Vector3.Lerp(small, original, t / dur); t += Time.deltaTime; yield return null; }
+        if (slot != null) slot.transform.localScale = original;
     }
 
-    // ─── Enerji efekti ───
-    IEnumerator EnergyEffect()
+    void StopHealing()
     {
-        // Efekti uygula
-        player.walkSpeed  += energySpeedBonus;
-        player.runSpeed   += energySpeedBonus;
-        player.staminaDrain = 0f;   // Stamina bitmiyor
-
-        yield return new WaitForSeconds(energyDuration);
-
-        // Efekti geri al
-        player.walkSpeed  -= energySpeedBonus;
-        player.runSpeed   -= energySpeedBonus;
-        player.staminaDrain = 25f;  // Normal değere dön
+        if (player.animator != null) player.animator.SetBool("IsHealing", false);
     }
 
     Sprite GetSprite(ItemType type)
@@ -225,17 +170,9 @@ public class InventoryUI : MonoBehaviour
         {
             case ItemType.Bandage:     return "Bandaj";
             case ItemType.EnergyDrink: return "Enerji";
-            case ItemType.Ammo:        return "Mermi";
-            case ItemType.Weapon:      return "Silah";
             default:                   return "Eşya";
         }
     }
 
-    void StopHealing()
-    {
-        if(player.animator != null) player.animator.SetBool("IsHealing", false);
-    }
-
     public List<InventoryItem> GetItems() => items;
-
 }

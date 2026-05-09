@@ -36,35 +36,25 @@ public class PlayerMovement : MonoBehaviour
     // ═══════════════════════════════════════════════════════
     [Header("HP & Stamina")]
     public float maxHP          = 100f;
-
     public float maxStamina     = 100f;
     public float staminaDrain   = 6f;
     public float staminaRecover = 8f;
     public float staminaWaitTime = 2f;
-    private bool isExhausted = false;
-    private float staminaCooldownTimer = 0f;
 
     [HideInInspector] public float HP;
     [HideInInspector] public float Stamina;
-    [HideInInspector] public bool canMove = true;
-
-    // ═══════════════════════════════════════════════════════
-    //  WEAPON
-    // ═══════════════════════════════════════════════════════
-
-    [Header("Weapon Settings")]
-    public int currentAmmo = 0; // Mevcut mermi
-    public int maxAmmo = 90;    // Taşınabilecek max mermi
+    [HideInInspector] public bool  canMove = true;
 
     // ═══════════════════════════════════════════════════════
     //  PRIVATE
     // ═══════════════════════════════════════════════════════
-    Vector3    velocity;
-    Vector3    lastMoveDir;   // son hareket yönünü hatırla
-    bool       isGrounded;
-    bool       isCrouching;
-    bool       isDead;
-    bool       isKnockedDown;
+    Vector3 velocity;
+    bool    isGrounded;
+    bool    isCrouching;
+    bool    isDead;
+    bool    isKnockedDown;
+    bool    isExhausted;
+    float   staminaCooldownTimer;
 
     // ═══════════════════════════════════════════════════════
     //  START
@@ -73,15 +63,14 @@ public class PlayerMovement : MonoBehaviour
     {
         HP      = maxHP;
         Stamina = maxStamina;
+
         inventory = Object.FindFirstObjectByType<InventoryUI>();
-        animator = GetComponentInChildren<Animator>();
-        if(animator == null) Debug.LogError("Animator alt objelerde de bulunamadı! Lütfen referansı kontrol et.");
+        animator  = GetComponentInChildren<Animator>();
+        if (animator == null)
+            Debug.LogError("Animator bulunamadı!");
 
         controller.height = standHeight;
         controller.center = new Vector3(0f, standCenterY, 0f);
-
-        // Pistol layer'ı şimdilik kapat (silah alınınca açılacak)
-        animator.SetLayerWeight(1, 0f);
     }
 
     // ═══════════════════════════════════════════════════════
@@ -89,41 +78,14 @@ public class PlayerMovement : MonoBehaviour
     // ═══════════════════════════════════════════════════════
     void Update()
     {
-        if (isDead || isKnockedDown) 
-        {
-            return;
-        }
+        if (isDead || isKnockedDown) return;
 
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            // Envanter referansının dolu olduğundan emin ol
-            if (inventory != null && inventory.hasWeapon) 
-            {
-                animator.SetLayerWeight(1, 1f); // Silah modu (Pistol)
-                // Eğer elinde silah modeli varsa onu da aktif et:
-                // if (weaponModel != null) weaponModel.SetActive(true);
-                Debug.Log("Silah çekildi.");
-            }
-            else
-            {
-                Debug.Log("Envanterde silah yok.");
-            }
-        }
-
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            animator.SetLayerWeight(1, 0f); // El modu (Idle)
-            // if (weaponModel != null) weaponModel.SetActive(false);
-            Debug.Log("Silah kılıfa koyuldu.");
-        }   
-        
         GroundCheck();
         Move();
         Jump();
         ApplyGravity();
         HandleCrouch();
         HandleStamina();
-        HandleShooting();
         HandleHealing();
     }
 
@@ -145,7 +107,8 @@ public class PlayerMovement : MonoBehaviour
     // ═══════════════════════════════════════════════════════
     void Move()
     {
-        if(!canMove) return;
+        if (!canMove) return;
+
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
@@ -154,12 +117,9 @@ public class PlayerMovement : MonoBehaviour
 
         if (moving)
         {
-            // Kamera yönünde hareket
             float   yaw     = cameraRoot.GetYaw();
             Vector3 moveDir = (Quaternion.Euler(0f, yaw, 0f) * inputDir).normalized;
-            lastMoveDir = moveDir;   // yönü kaydet
 
-            // Karakteri hareket yönüne döndür
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
                 Quaternion.LookRotation(moveDir),
@@ -170,13 +130,12 @@ public class PlayerMovement : MonoBehaviour
             float speed  = isCrouching ? crouchSpeed : (canRun ? runSpeed : walkSpeed);
             controller.Move(moveDir * speed * Time.deltaTime);
 
-            // Blend Tree: 0=dur, 0.5=yürü, 1=koş
             float animSpeed = canRun ? 1f : 0.5f;
-            animator.SetFloat("Speed", animSpeed, 0.1f, Time.deltaTime);
+            float dampTime = isCrouching ? 0.3f : 0.1f;
+            animator.SetFloat("Speed", moving ? animSpeed : 0f, dampTime, Time.deltaTime);
         }
         else
         {
-            // Duruyorsa Speed sıfırla ama rotasyon BOZULMASIN
             animator.SetFloat("Speed", 0f, 0.1f, Time.deltaTime);
         }
     }
@@ -198,14 +157,15 @@ public class PlayerMovement : MonoBehaviour
     // ═══════════════════════════════════════════════════════
     void ApplyGravity()
     {
-        if(controller != null && controller.enabled){
+        if (controller != null && controller.enabled)
+        {
             velocity.y += gravity * Time.deltaTime;
             controller.Move(velocity * Time.deltaTime);
         }
     }
 
     // ═══════════════════════════════════════════════════════
-    //  EĞİLME — Ctrl basılı tut
+    //  EĞİLME
     // ═══════════════════════════════════════════════════════
     void HandleCrouch()
     {
@@ -239,46 +199,29 @@ public class PlayerMovement : MonoBehaviour
     //  STAMINA
     // ═══════════════════════════════════════════════════════
     void HandleStamina()
-{
-    float h = Input.GetAxis("Horizontal");
-    float v = Input.GetAxis("Vertical");
-    bool isMoving = (new Vector2(h, v)).sqrMagnitude > 0.01f;
-
-    bool running = Input.GetKey(KeyCode.LeftShift) && isMoving && !isCrouching && !isDead;
-
-    // 1. EĞER KOŞUYORSA: Stamina harca ve bekleme süresini sıfırla
-    if (running && !isExhausted && Stamina > 0)
     {
-        Stamina -= staminaDrain * Time.deltaTime;
-        staminaCooldownTimer = staminaWaitTime; // Her koştuğunda sayacı tazele
-    }
-    // 2. EĞER KOŞMUYORSA: Önce bekleme süresini bitir, sonra doldur
-    else
-    {
-        if (staminaCooldownTimer > 0)
+        float h = Input.GetAxis("Horizontal");
+        float v = Input.GetAxis("Vertical");
+        bool  isMoving = (new Vector2(h, v)).sqrMagnitude > 0.01f;
+        bool  running  = Input.GetKey(KeyCode.LeftShift) && isMoving && !isCrouching && !isDead;
+
+        if (running && !isExhausted && Stamina > 0)
         {
-            staminaCooldownTimer -= Time.deltaTime; // 0'a kadar geri sayar
+            Stamina -= staminaDrain * Time.deltaTime;
+            staminaCooldownTimer = staminaWaitTime;
         }
         else
         {
-            Stamina += staminaRecover * Time.deltaTime; // Sayaç bitince dolmaya başlar
+            if (staminaCooldownTimer > 0)
+                staminaCooldownTimer -= Time.deltaTime;
+            else
+                Stamina += staminaRecover * Time.deltaTime;
         }
-    }
 
-    // Yorgunluk kilidi (Eski mantığın devamı)
-    if (Stamina <= 0) isExhausted = true;
-    if (isExhausted && Stamina >= (maxStamina * 0.2f)) isExhausted = false;
+        if (Stamina <= 0)                          isExhausted = true;
+        if (isExhausted && Stamina >= maxStamina * 0.2f) isExhausted = false;
 
-    Stamina = Mathf.Clamp(Stamina, 0f, maxStamina);
-}
-
-    // ═══════════════════════════════════════════════════════
-    //  SİLAH
-    // ═══════════════════════════════════════════════════════
-    void HandleShooting()
-    {
-        if (Input.GetMouseButtonDown(0)) animator.SetBool("IsShooting", true);
-        if (Input.GetMouseButtonUp(0))   animator.SetBool("IsShooting", false);
+        Stamina = Mathf.Clamp(Stamina, 0f, maxStamina);
     }
 
     // ═══════════════════════════════════════════════════════
@@ -328,17 +271,15 @@ public class PlayerMovement : MonoBehaviour
 
     void Die()
     {
-        if(isDead) return;
+        if (isDead) return;
         isDead = true;
-        Debug.Log("<color=red>OYUNCU ÖLDÜ!</color>");
         animator.SetBool("IsDead", true);
         controller.enabled = false;
-        transform.position = new Vector3(transform.position.x, 0.1f, transform.position.z);
-        animator.SetLayerWeight(1, 0f);
+        Debug.Log("<color=red>OYUNCU ÖLDÜ!</color>");
     }
 
     // ═══════════════════════════════════════════════════════
-    //  ITEM PICKUP TARAFINDAN ÇAĞRILIR
+    //  DIŞ ÇAĞRILAR
     // ═══════════════════════════════════════════════════════
     public void Heal(float amount)
         => HP = Mathf.Clamp(HP + amount, 0f, maxHP);
@@ -346,28 +287,15 @@ public class PlayerMovement : MonoBehaviour
     public void RestoreStamina(float amount)
         => Stamina = Mathf.Clamp(Stamina + amount, 0f, maxStamina);
 
-    // Silah alınınca bu çağrılır
-    public void EquipWeapon()
-        => animator.SetLayerWeight(1, 1f);
-
     public void BoostSpeed(float duration)
-    {
-        StartCoroutine(SpeedRoutine(3f, duration)); 
-    }
+        => StartCoroutine(SpeedRoutine(3f, duration));
 
-    private IEnumerator SpeedRoutine(float boostAmount, float duration)
+    IEnumerator SpeedRoutine(float bonus, float duration)
     {
-        // 1. Hızı artır
-        walkSpeed += boostAmount;
-        runSpeed += boostAmount;
-        Debug.Log("<color=cyan>Enerji İçildi! Karakter hızlandı.</color>");
-
-        // 2. Belirtilen süre kadar bekle (Örn: 30 saniye)
+        walkSpeed += bonus;
+        runSpeed  += bonus;
         yield return new WaitForSeconds(duration);
-
-        // 3. Süre bitince hızı geri al
-        walkSpeed -= boostAmount;
-        runSpeed -= boostAmount;
-        Debug.Log("<color=cyan>Enerji bitti. Hız normale döndü.</color>");
+        walkSpeed -= bonus;
+        runSpeed  -= bonus;
     }
 }

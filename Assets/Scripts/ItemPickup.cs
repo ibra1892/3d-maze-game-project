@@ -6,21 +6,16 @@ public class ItemPickup : MonoBehaviour
     public float   pickupRadius = 2f;
     public KeyCode pickupKey    = KeyCode.E;
 
-    [HideInInspector] public int  totalAmmo = 0;
-    [HideInInspector] public bool hasWeapon = false;
-
     private PlayerMovement player;
     private Animator       anim;
     private InventoryUI    inventory;
-    private WeaponManager  weaponManager;
 
     void Start()
     {
-        player        = GetComponent<PlayerMovement>();
+        player    = GetComponent<PlayerMovement>();
         if (player == null) player = Object.FindFirstObjectByType<PlayerMovement>();
-        anim          = GetComponentInChildren<Animator>();
-        inventory     = Object.FindFirstObjectByType<InventoryUI>();
-        weaponManager = Object.FindFirstObjectByType<WeaponManager>();
+        anim      = GetComponentInChildren<Animator>();
+        inventory = Object.FindFirstObjectByType<InventoryUI>();
     }
 
     void Update()
@@ -62,18 +57,6 @@ public class ItemPickup : MonoBehaviour
             case ItemType.EnergyDrink:
                 inventory.AddItem(ItemType.EnergyDrink, 1);
                 Debug.Log("Enerji içeceği alındı!");
-                break;
-
-            case ItemType.Ammo:
-                totalAmmo += nearestItem.ammoCount;
-                inventory.AddItem(ItemType.Ammo, nearestItem.ammoCount);
-                Debug.Log($"Mermi alındı! Toplam: {totalAmmo}");
-                break;
-
-            case ItemType.Weapon:
-                hasWeapon = true;
-                weaponManager?.OnWeaponPickedUp();
-                Debug.Log("Silah alındı! 1 tuşuyla kuşan.");
                 break;
         }
 

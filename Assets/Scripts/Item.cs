@@ -1,12 +1,11 @@
 using UnityEngine;
 
-public enum ItemType { Bandage, EnergyDrink, Ammo, Weapon }
+public enum ItemType { Bandage, EnergyDrink }
 
 public class Item : MonoBehaviour
 {
-    public ItemType itemType  = ItemType.Bandage;
-    public float    value     = 30f;   // HP veya Stamina miktarı
-    public int      ammoCount = 10;    // Sadece Ammo tipi için
+    public ItemType itemType = ItemType.Bandage;
+    public float    value    = 30f;
 
     [Header("Efekt")]
     public float rotateSpeed = 90f;

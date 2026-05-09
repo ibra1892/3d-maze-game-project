@@ -12,8 +12,6 @@ public class HUDManager : MonoBehaviour
     public Image staminaBarFill;
     public TMP_Text staminaText;
 
-    [Header("Ammo")]
-    public TMP_Text ammoText;
 
     private PlayerMovement player;
     private float hpBarMaxWidth;
@@ -23,8 +21,8 @@ public class HUDManager : MonoBehaviour
     {
         player = Object.FindFirstObjectByType<PlayerMovement>();
         if(player == null) Debug.LogError("HUDManager: Oyuncu (PlayerMovement) bulunamadı!");
-        // Başlangıçtaki genişliği max genişlik olarak kaydet
-        // Önemli: HPBarFill'in Pivot noktası X=0, Y=0.5 olmalı!
+        if (hpBarFill == null) Debug.LogError("HUDManager: HPBarFill atanmamış!");
+        if (staminaBarFill == null) Debug.LogError("HUDManager: StaminaBarFill atanmamış!");
         hpBarMaxWidth = hpBarFill.rectTransform.sizeDelta.x;
         staminaBarMaxWidth = staminaBarFill.rectTransform.sizeDelta.x;
         UpdateHP();
@@ -34,8 +32,6 @@ public class HUDManager : MonoBehaviour
     void Update()
     {
         if (player == null) return;
-
-        if(ammoText != null && player != null) ammoText.text = player.currentAmmo.ToString();
 
         UpdateHP();
         UpdateStamina();
