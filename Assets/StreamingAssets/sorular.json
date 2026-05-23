@@ -1,0 +1,26 @@
+[
+  {
+    "soruMetni": "Dünyanın en iyi futbolcusu kimdir?",
+    "secenekA": "Pelé",
+    "secenekB": "Diego Maradona",
+    "secenekC": "Lionel Messi",
+    "secenekD": "Cristiano Ronaldo",
+    "dogruCevap": "C"
+  },
+  {
+    "soruMetni": "Micheal Jackson'ın doğum yılı kaçtır?",
+    "secenekA": "1958",
+    "secenekB": "1959",
+    "secenekC": "1960",
+    "secenekD": "1961",
+    "dogruCevap": "A"
+  },
+  {
+    "soruMetni": "Aşağıdakılerın hangısının formula 1 sampiyonluğu yoktur?",
+    "secenekA": "Lewis Hamilton",
+    "secenekB": "Micheal Schumacher",
+    "secenekC": "Charles Leclerc",
+    "secenekD": "Max Verstappen",
+    "dogruCevap": "C"
+  }
+]
