@@ -124,12 +124,14 @@ public class InventoryUI : MonoBehaviour
             case ItemType.Bandage:
                 player.Heal(healAmount);
                 if (player.animator != null) player.animator.SetBool("IsHealing", true);
+                AudioManager.Instance.PlayBandage();
                 Invoke(nameof(StopHealing), 2f);
                 Debug.Log($"Bandaj kullanıldı: +{healAmount} HP");
                 break;
 
             case ItemType.EnergyDrink:
                 player.BoostSpeed(energyDuration);
+                AudioManager.Instance.PlayEnergyDrink();
                 Debug.Log($"Enerji içeceği kullanıldı! {energyDuration}sn sürecek.");
                 break;
         }

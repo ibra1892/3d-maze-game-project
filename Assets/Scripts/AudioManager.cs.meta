@@ -1,0 +1,27 @@
+fileFormatVersion: 2
+guid: ea35f18b9499f354494477e119cf1121
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - footstepWalk: {instanceID: 0}
+  - footstepRun: {instanceID: 0}
+  - hurtSound: {instanceID: 0}
+  - deathSound: {instanceID: 0}
+  - pickupSound: {instanceID: 0}
+  - bandageWrap: {instanceID: 0}
+  - bandageRip: {instanceID: 0}
+  - canOpen: {instanceID: 0}
+  - canSwallow: {instanceID: 0}
+  - doorOpen: {instanceID: 0}
+  - correctAnswer: {instanceID: 0}
+  - wrongAnswer: {instanceID: 0}
+  - torchFire: {instanceID: 0}
+  - sfxSource: {instanceID: 0}
+  - footstepSource: {instanceID: 0}
+  - ambianceSource: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

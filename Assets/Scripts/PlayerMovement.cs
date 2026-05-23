@@ -250,17 +250,8 @@ public class PlayerMovement : MonoBehaviour
         if (isDead || isKnockedDown) return;
         HP = Mathf.Clamp(HP - damage, 0f, maxHP);
         if (HP <= 0f) { Die(); return; }
+        AudioManager.Instance.PlayHurt();
         animator.SetTrigger("IsHit");
-    }
-
-    public void TakeHeavyHit(float damage)
-    {
-        if (isDead || isKnockedDown) return;
-        HP = Mathf.Clamp(HP - damage, 0f, maxHP);
-        if (HP <= 0f) { Die(); return; }
-        isKnockedDown = true;
-        animator.SetTrigger("KnockDown");
-        Invoke(nameof(GetUp), 3f);
     }
 
     void GetUp()
@@ -275,6 +266,7 @@ public class PlayerMovement : MonoBehaviour
         isDead = true;
         animator.SetBool("IsDead", true);
         controller.enabled = false;
+        AudioManager.Instance.PlayDeath();
         Debug.Log("<color=red>OYUNCU ÖLDÜ!</color>");
     }
 

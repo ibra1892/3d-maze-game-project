@@ -45,7 +45,9 @@ public class ItemPickup : MonoBehaviour
         // Alma animasyonu + hareket kilidi
         anim.SetTrigger("Lift");
         player.canMove = false;
-        Invoke(nameof(EnableMovement), 1.5f);
+        AudioManager.Instance.PlayPickup();
+        float clipLength = GetClipLength("Lifting");
+        Invoke(nameof(EnableMovement), clipLength > 0 ? clipLength: 1.5f);
 
         switch (nearestItem.itemType)
         {
@@ -69,5 +71,12 @@ public class ItemPickup : MonoBehaviour
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, pickupRadius);
+    }
+    
+    float GetClipLength(string clipName)
+    {
+        foreach (AnimationClip clip in anim.runtimeAnimatorController.animationClips)
+            if (clip.name == clipName) return clip.length;
+        return 0f;
     }
 }
