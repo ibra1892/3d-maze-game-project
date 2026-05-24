@@ -2,44 +2,40 @@ using UnityEngine;
 
 public class DoorController : MonoBehaviour
 {
+    public bool isOpen = false;
     private bool isPlayerNearby = false;
-    private bool isOpen = false;
 
-    public float openAngle = 90f; 
-    public float smoothSpeed = 3f; 
-
-    private Quaternion targetRotation;
-    private Quaternion startRotation;
+    [Header("Kapı Yukarı Kayma Ayarları")]
+    public float yukselmeMiktari = 3.5f; // Kapı yukarı doğru kaç metre çıksın?
+    private Vector3 startPosition;
+    private Vector3 targetPosition;
 
     void Start()
     {
-        startRotation = transform.rotation;
-        targetRotation = Quaternion.Euler(transform.eulerAngles.x, transform.eulerAngles.y + openAngle, transform.eulerAngles.z);
+        // KANKA MANTIĞI DEĞİŞTİRDİK: 
+        // Açıyı değil, kapının durduğu POZİSYONU (Yerel yerini) kaydediyoruz.
+        startPosition = transform.localPosition;
+        
+        // Hedef pozisyon: İlk durduğu yerin 'Y' ekseninde (yukarısında) belirlenen miktar kadar üstü
+        targetPosition = startPosition + new Vector3(0, yukselmeMiktari, 0);
     }
 
     void Update()
     {
         if (isPlayerNearby && Input.GetKeyDown(KeyCode.E))
         {
-            // KANKA DEĞİŞEN KISIM BURASI:
-            // Eğer kapı kapalıysa direkt açma, git SoruManager'ı çağır!
             if (!isOpen)
             {
                 SoruManager.instance.SoruSor(gameObject);
             }
-            else
-            {
-                // Kapı zaten açıksa E'ye basınca normal kapansın brom
-                isOpen = false;
-            }
         }
 
-        Quaternion currentTarget = isOpen ? targetRotation : startRotation;
-        transform.rotation = Quaternion.Slerp(transform.rotation, currentTarget, Time.deltaTime * smoothSpeed);
+        // Kapının yukarı doğru yumuşakça kayma animasyonu (Lerp ile)
+        Vector3 currentTarget = isOpen ? targetPosition : startPosition;
+        transform.localPosition = Vector3.Lerp(transform.localPosition, currentTarget, Time.deltaTime * 5f);
     }
 
-    // YENİ EKLENEN FONKSİYON: 
-    // SoruManager'da doğru cevap butonuna basılınca bu fonksiyon dışarıdan tetiklenecek kanka
+    // Soru doğru bilinince SoruManager burayı tetikler
     public void KapıyıAc()
     {
         isOpen = true;
@@ -47,17 +43,11 @@ public class DoorController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
-        {
-            isPlayerNearby = true;
-        }
+        if (other.CompareTag("Player")) isPlayerNearby = true;
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Player"))
-        {
-            isPlayerNearby = false;
-        }
+        if (other.CompareTag("Player")) isPlayerNearby = false;
     }
 }

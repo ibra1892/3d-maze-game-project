@@ -1,26 +1,106 @@
 [
   {
-    "soruMetni": "Dünyanın en iyi futbolcusu kimdir?",
-    "secenekA": "Pelé",
-    "secenekB": "Diego Maradona",
-    "secenekC": "Lionel Messi",
-    "secenekD": "Cristiano Ronaldo",
-    "dogruCevap": "C"
+    "soruMetni": "Şampiyonlar Ligi tarihinin en golcü (140 gol) futbolcusu kimdir?",
+    "secenekA": "Lionel Messi",
+    "secenekB": "Cristiano Ronaldo",
+    "secenekC": "Robert Lewandowski",
+    "secenekD": "Karim Benzema",
+    "dogruCevap": "B"
   },
   {
-    "soruMetni": "Micheal Jackson'ın doğum yılı kaçtır?",
-    "secenekA": "1958",
-    "secenekB": "1959",
-    "secenekC": "1960",
-    "secenekD": "1961",
+    "soruMetni": "'The Dark Knight' filminde efsanevi Joker performansıyla Oscar kazanan unutulmaz aktör kimdir?",
+    "secenekA": "Heath Ledger",
+    "secenekB": "Joaquin Phoenix",
+    "secenekC": "Jack Nicholson",
+    "secenekD": "Jared Leto",
     "dogruCevap": "A"
   },
   {
-    "soruMetni": "Aşağıdakılerın hangısının formula 1 sampiyonluğu yoktur?",
-    "secenekA": "Lewis Hamilton",
-    "secenekB": "Micheal Schumacher",
-    "secenekC": "Charles Leclerc",
-    "secenekD": "Max Verstappen",
+    "soruMetni": "'Rap God' şarkısındaki aşırı hızlı sözleriyle Guinness Rekorlar Kitabı'na giren dünyaca ünlü rap sanatçısı kimdir?",
+    "secenekA": "2Pac",
+    "secenekB": "Eminem",
+    "secenekC": "Kendrick Lamar",
+    "secenekD": "Jay-Z",
+    "dogruCevap": "B"
+  },
+  {
+    "soruMetni": "Dünya genelinde 300 milyondan fazla satarak tarihin en çok satan video oyunu unvanını alan oyun hangisidir?",
+    "secenekA": "GTA V",
+    "secenekB": "Tetris",
+    "secenekC": "Minecraft",
+    "secenekD": "PUBG",
     "dogruCevap": "C"
+  },
+  {
+    "soruMetni": "Güneş Sistemi'mizde güneşe en yakın ikinci gezegen olmasına rağmen, atmosferi yüzünden EN SICAK olan gezegen hangisidir?",
+    "secenekA": "Merkür",
+    "secenekB": "Venüs",
+    "secenekC": "Mars",
+    "secenekD": "Jüpiter",
+    "dogruCevap": "B"
+  },
+  {
+    "soruMetni": "Dünya Kupası tarihinde toplam 16 gol atarak 'Dünya Kupası Tarihinin En Golcü Oyuncusu' olan Alman forvet kimdir?",
+    "secenekA": "Miroslav Klose",
+    "secenekB": "Ronaldo Nazario",
+    "secenekC": "Gerd Müller",
+    "secenekD": "Thomas Müller",
+    "dogruCevap": "A"
+  },
+  {
+    "soruMetni": "'Bohemian Rhapsody' ve 'We Will Rock You' gibi tüm dünyayı sallayan efsanevi şarkılara imza atan rock grubu hangisidir?",
+    "secenekA": "Nirvana",
+    "secenekB": "Pink Floyd",
+    "secenekC": "Queen",
+    "secenekD": "Led Zeppelin",
+    "dogruCevap": "C"
+  },
+  {
+    "soruMetni": "Tarihteki ilk yazılı barış anlaşması olan Kadeş Anlaşması hangi iki büyük kadim devlet arasında imzalanmıştır?",
+    "secenekA": "Hitit - Mısır",
+    "secenekB": "Sümer - Babil",
+    "secenekC": "Roma - Kartaca",
+    "secenekD": "Pers - Yunan",
+    "dogruCevap": "A"
+  },
+  {
+    "soruMetni": "Matrix serisinde 'Seçilmiş Kişi' olan Neo (Thomas Anderson) karakterini canlandıran efsanevi aktör kimdir?",
+    "secenekA": "Brad Pitt",
+    "secenekB": "Tom Cruise",
+    "secenekC": "Keanu Reeves",
+    "secenekD": "Johnny Depp",
+    "dogruCevap": "C"
+  },
+  {
+    "soruMetni": "Dünyanın en derin noktası olan ve yaklaşık 11 bin metre derinliğe sahip Mariana Çukuru hangi okyanustadır?",
+    "secenekA": "Atlas Okyanusu",
+    "secenekB": "Hint Okyanusu",
+    "secenekC": "Büyük Okyanus (Pasifik)",
+    "secenekD": "Arktik Okyanusu",
+    "dogruCevap": "C"
+  },
+  {
+    "soruMetni": "1970'li yıllarda oyun dünyasını kasıp kavuran ve evlerimize giren ilk popüler video oyunu konsolu hangisidir?",
+    "secenekA": "PlayStation 1",
+    "secenekB": "Atari 2600",
+    "secenekC": "Nintendo NES",
+    "secenekD": "Sega Genesis",
+    "dogruCevap": "B"
+  },
+  {
+    "soruMetni": "Efsanevi 'You'll Never Walk Alone' (Asla Yalnız Yürümeyeceksin) marşıyla bilinen Anfield stadyumu hangi takıma aittir?",
+    "secenekA": "Manchester United",
+    "secenekB": "Liverpool",
+    "secenekC": "Chelsea",
+    "secenekD": "Galatasaray",
+    "dogruCevap": "B"
+  },
+  {
+    "soruMetni": "YouTube'da çektiği dev bütçeli çılgın yarışmalarla 200 milyondan fazla aboneye ulaşan dünyanın en popüler bireysel YouTuber'ı kimdir?",
+    "secenekA": "PewDiePie",
+    "secenekB": "MrBeast",
+    "secenekC": "Dude Perfect",
+    "secenekD": "Logan Paul",
+    "dogruCevap": "B"
   }
 ]

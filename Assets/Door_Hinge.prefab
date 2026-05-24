@@ -47,8 +47,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f299526a7f6bf244af53b8788135360, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorController
-  openAngle: 90
-  smoothSpeed: 3
+  isOpen: 0
+  yukselmeMiktari: 3.5
 --- !u!65 &7887990899890544798
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -164,7 +164,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3b747e2907b4f5a43b0d5b91868bb954, type: 2}
+  - {fileID: 2100000, guid: 8b1529c217b22464c886176bf49da009, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
