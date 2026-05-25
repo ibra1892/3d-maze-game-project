@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.IO;
+using System.Collections;
 using System.Collections.Generic;
 
 [System.Serializable]
@@ -65,17 +66,30 @@ public class SoruManager : MonoBehaviour
     {
         if (tumSorular.Count == 0)
         {
-            Debug.LogWarning("Tüm sorular çözüldü! Kapı direkt açılıyor.");
             kapi.SendMessage("KapıyıAc", SendMessageOptions.DontRequireReceiver);
             return;
         }
 
+        foreach (Button btn in cevapButonlari)
+        {
+            if (btn != null && btn.image != null)
+            {
+                btn.image.color = Color.white; 
+            }
+        }
+
         suAnkiKapi = kapi; 
         soruPaneli.SetActive(true); 
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperOpen();
+        }
+
         Time.timeScale = 0; 
         
         Cursor.lockState = CursorLockMode.None; 
-        Cursor.visible = true;                  
+        Cursor.visible = true;                                  
 
         int rastgeleIndeks = Random.Range(0, tumSorular.Count);
         aktifSoru = tumSorular[rastgeleIndeks];
@@ -91,9 +105,12 @@ public class SoruManager : MonoBehaviour
     {
         if (secilenSık == aktifSoru.dogruCevap)
         {
-            Debug.Log("DOĞRU CEVAP!");
-            
-            tumSorular.Remove(aktifSoru); // Doğru bilinen soruyu havuzdan sil
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayCorrect();
+            }
+
+            tumSorular.Remove(aktifSoru); 
 
             soruPaneli.SetActive(false); 
             Time.timeScale = 1;          
@@ -106,11 +123,48 @@ public class SoruManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("YANLIŞ CEVAP!");
-            
-            // KANKA DEĞİŞEN TEK YER BURASI:
-            // Yanlış şıkka basınca sorunun üstüne kıpkırmızı uyarıyı çakıyoruz brom!
+            StopAllCoroutines();
+            StartCoroutine(SallamaEfekti());
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayWrong();
+            }
+
+            int tiklananButonIndeksi = -1;
+
+            if (secilenSık == "A" || secilenSık == "A)" || secilenSık == aktifSoru.secenekA) tiklananButonIndeksi = 0;
+            else if (secilenSık == "B" || secilenSık == "B)" || secilenSık == aktifSoru.secenekB) tiklananButonIndeksi = 1;
+            else if (secilenSık == "C" || secilenSık == "C)" || secilenSık == aktifSoru.secenekC) tiklananButonIndeksi = 2;
+            else if (secilenSık == "D" || secilenSık == "D)" || secilenSık == aktifSoru.secenekD) tiklananButonIndeksi = 3;
+
+            if (tiklananButonIndeksi != -1 && tiklananButonIndeksi < cevapButonlari.Length)
+            {
+                cevapButonlari[tiklananButonIndeksi].image.color = new Color(1f, 0.25f, 0.25f, 1f); 
+            }
+
             soruText.text = "<color=red>⚠️ YANLIŞ CEVAP! Tekrar dene brom! ⚠️</color>\n\n" + aktifSoru.soruMetni;
         }
+    }
+
+    private IEnumerator SallamaEfekti()
+    {
+        Transform panelTransform = soruPaneli.transform;
+        Vector3 orijinalPozisyon = panelTransform.localPosition;
+
+        float sure = 0.20f;    
+        float hiz = 65f;     
+        float miktar = 15f;  
+        float gecenSure = 0f;
+
+        while (gecenSure < sure)
+        {
+            gecenSure += Time.unscaledDeltaTime;
+            float yeniX = orijinalPozisyon.x + Mathf.Sin(Time.unscaledTime * hiz) * miktar;
+            panelTransform.localPosition = new Vector3(yeniX, orijinalPozisyon.y, orijinalPozisyon.z);
+            yield return null;
+        }
+
+        panelTransform.localPosition = orijinalPozisyon;
     }
 }

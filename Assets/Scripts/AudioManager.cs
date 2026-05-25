@@ -21,8 +21,8 @@ public class AudioManager : MonoBehaviour
     public AudioClip doorOpen;
     public AudioClip correctAnswer;
     public AudioClip wrongAnswer;
+    public AudioClip paperOpen;
 
-    // AudioSource'lar otomatik oluşturulur
     private AudioSource sfxSource;
     private AudioSource footstepSource;
 
@@ -31,24 +31,20 @@ public class AudioManager : MonoBehaviour
         if (Instance == null) Instance = this;
         else { Destroy(gameObject); return; }
 
-        // SFX Source
-        sfxSource            = gameObject.AddComponent<AudioSource>();
+        sfxSource             = gameObject.AddComponent<AudioSource>();
         sfxSource.playOnAwake = false;
 
-        // Footstep Source
-        footstepSource            = gameObject.AddComponent<AudioSource>();
+        footstepSource             = gameObject.AddComponent<AudioSource>();
         footstepSource.playOnAwake = false;
         footstepSource.loop        = false;
     }
 
-    // ─── GENEL SES ───────────────────────────────────────
     public void Play(AudioClip clip, float volume = 1f)
     {
         if (clip == null || sfxSource == null) return;
         sfxSource.PlayOneShot(clip, volume);
     }
 
-    // ─── ADIM SESİ ───────────────────────────────────────
     public void PlayFootstep(bool isRunning)
     {
         if (footstepSource == null) return;
@@ -67,7 +63,6 @@ public class AudioManager : MonoBehaviour
             footstepSource.Stop();
     }
 
-    // ─── BANDAJ ──────────────────────────────────────────
     public void PlayBandage()
     {
         Play(bandageRip, 0.8f);
@@ -77,7 +72,6 @@ public class AudioManager : MonoBehaviour
 
     void PlayBandageWrap() => Play(bandageWrap, 0.8f);
 
-    // ─── ENERJİ İÇECEĞİ ──────────────────────────────────
     public void PlayEnergyDrink()
     {
         Play(canOpen, 0.9f);
@@ -87,11 +81,11 @@ public class AudioManager : MonoBehaviour
 
     void PlaySwallow() => Play(canSwallow, 0.9f);
 
-    // ─── KISA ÇAĞRILAR ───────────────────────────────────
-    public void PlayHurt()     => Play(hurtSound,     0.9f);
-    public void PlayDeath()    => Play(deathSound,    1f);
-    public void PlayPickup()   => Play(pickupSound,   0.7f);
-    public void PlayDoorOpen() => Play(doorOpen,      1f);
-    public void PlayCorrect()  => Play(correctAnswer, 1f);
-    public void PlayWrong()    => Play(wrongAnswer,   1f);
+    public void PlayHurt()      => Play(hurtSound,     0.9f);
+    public void PlayDeath()     => Play(deathSound,    1f);
+    public void PlayPickup()    => Play(pickupSound,   0.7f);
+    public void PlayDoorOpen()  => Play(doorOpen,      1f);
+    public void PlayCorrect()   => Play(correctAnswer, 1f);
+    public void PlayWrong()     => Play(wrongAnswer,   1f);
+    public void PlayPaperOpen() => Play(paperOpen,     1f);
 }

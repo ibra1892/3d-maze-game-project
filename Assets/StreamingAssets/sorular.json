@@ -1,106 +1,122 @@
 [
   {
-    "soruMetni": "Şampiyonlar Ligi tarihinin en golcü (140 gol) futbolcusu kimdir?",
-    "secenekA": "Lionel Messi",
-    "secenekB": "Cristiano Ronaldo",
-    "secenekC": "Robert Lewandowski",
-    "secenekD": "Karim Benzema",
+    "soruMetni": "Fikir hırsızlığı yapan bir hırsızın, rüya katmanları arasında yolculuğunu anlatan ve başrolünde Leonardo DiCaprio'nun oynadığı efsanevi sinema filmi hangisidir?",
+    "secenekA": "Interstellar",
+    "secenekB": "Inception",
+    "secenekC": "The Matrix",
+    "secenekD": "Shutter Island",
     "dogruCevap": "B"
   },
   {
-    "soruMetni": "'The Dark Knight' filminde efsanevi Joker performansıyla Oscar kazanan unutulmaz aktör kimdir?",
-    "secenekA": "Heath Ledger",
-    "secenekB": "Joaquin Phoenix",
-    "secenekC": "Jack Nicholson",
-    "secenekD": "Jared Leto",
+    "soruMetni": "Kareem Abdul-Jabbar'ın uzun yıllar kırılamayan rekorunu geçerek NBA tarihinin EN GOLCÜ (en çok sayı atan) futbol dışı efsane basketbolcusu kimdir?",
+    "secenekA": "Michael Jordan",
+    "secenekB": "Kobe Bryant",
+    "secenekC": "LeBron James",
+    "secenekD": "Shaquille O'Neal",
+    "dogruCevap": "C"
+  },
+  {
+    "soruMetni": "2015 yılında hücrelerin hasar gören DNA'ları nasıl onardığını haritalandırarak Nobel Kimya Ödülü'nü kazanan dünyaca ünlü Türk bilim insanı kimdir?",
+    "secenekA": "Aziz Sancar",
+    "secenekB": "Cahit Arf",
+    "secenekC": "Oktay Sinanoğlu",
+    "secenekD": "Celal Şengör",
     "dogruCevap": "A"
   },
   {
-    "soruMetni": "'Rap God' şarkısındaki aşırı hızlı sözleriyle Guinness Rekorlar Kitabı'na giren dünyaca ünlü rap sanatçısı kimdir?",
-    "secenekA": "2Pac",
-    "secenekB": "Eminem",
-    "secenekC": "Kendrick Lamar",
-    "secenekD": "Jay-Z",
+    "soruMetni": "1982 yılında çıkardığı ve içinde 'Billie Jean', 'Beat It' gibi efsane hitleri barındıran 'Thriller' albümüyle tüm zamanların en çok satan albüm rekoruna sahip müzisyen kimdir?",
+    "secenekA": "Elvis Presley",
+    "secenekB": "Michael Jackson",
+    "secenekC": "Eminem",
+    "secenekD": "Freddie Mercury",
     "dogruCevap": "B"
   },
   {
-    "soruMetni": "Dünya genelinde 300 milyondan fazla satarak tarihin en çok satan video oyunu unvanını alan oyun hangisidir?",
-    "secenekA": "GTA V",
-    "secenekB": "Tetris",
-    "secenekC": "Minecraft",
-    "secenekD": "PUBG",
-    "dogruCevap": "C"
-  },
-  {
-    "soruMetni": "Güneş Sistemi'mizde güneşe en yakın ikinci gezegen olmasına rağmen, atmosferi yüzünden EN SICAK olan gezegen hangisidir?",
-    "secenekA": "Merkür",
-    "secenekB": "Venüs",
-    "secenekC": "Mars",
-    "secenekD": "Jüpiter",
+    "soruMetni": "Modern fiziğin temeli kabul edilen 'Görelilik Teorisi'ni (İzafiyet Teorisi) ortaya koyarak bilim dünyasında çığır açan dahi fizikçi kimdir?",
+    "secenekA": "Isaac Newton",
+    "secenekB": "Albert Einstein",
+    "secenekC": "Stephen Hawking",
+    "secenekD": "Nikola Tesla",
     "dogruCevap": "B"
   },
   {
-    "soruMetni": "Dünya Kupası tarihinde toplam 16 gol atarak 'Dünya Kupası Tarihinin En Golcü Oyuncusu' olan Alman forvet kimdir?",
-    "secenekA": "Miroslav Klose",
-    "secenekB": "Ronaldo Nazario",
-    "secenekC": "Gerd Müller",
-    "secenekD": "Thomas Müller",
+    "soruMetni": "1789 yılında gerçekleşen, mutlak monarşinin yıkılıp insan hakları ve milliyetçilik akımlarının tüm dünyaya yayılmasıyla Yakın Çağ'ı başlatan tarihi olay hangisidir?",
+    "secenekA": "Fransız İhtilali",
+    "secenekB": "Sanayi Devrimi",
+    "secenekC": "Yüzyıl Savaşları",
+    "secenekD": "Amerikan Bağımsızlık Bildirgesi",
     "dogruCevap": "A"
   },
   {
-    "soruMetni": "'Bohemian Rhapsody' ve 'We Will Rock You' gibi tüm dünyayı sallayan efsanevi şarkılara imza atan rock grubu hangisidir?",
-    "secenekA": "Nirvana",
-    "secenekB": "Pink Floyd",
-    "secenekC": "Queen",
-    "secenekD": "Led Zeppelin",
+    "soruMetni": "Deniz seviyesinden yaklaşık 8.848 metre yüksekliğiyle Asya'daki Himalaya dağlarında yer alan, dünyanın EN YÜKSEK dağı hangisidir?",
+    "secenekA": "K2 Dağı",
+    "secenekB": "Everest Dağı",
+    "secenekC": "Kilimanjaro Dağı",
+    "secenekD": "Alpler",
+    "dogruCevap": "B"
+  },
+  {
+    "soruMetni": "Sinema tarihinde 'Kesişme', 'Akıl Oyunları' gibi başyapıtlara imza atan, özellikle 'Fight Club' filminin yönetmen koltuğunda oturan dahi sinemacı kimdir?",
+    "secenekA": "Christopher Nolan",
+    "secenekB": "Quentin Tarantino",
+    "secenekC": "David Fincher",
+    "secenekD": "Martin Scorsese",
     "dogruCevap": "C"
   },
   {
-    "soruMetni": "Tarihteki ilk yazılı barış anlaşması olan Kadeş Anlaşması hangi iki büyük kadim devlet arasında imzalanmıştır?",
-    "secenekA": "Hitit - Mısır",
-    "secenekB": "Sümer - Babil",
-    "secenekC": "Roma - Kartaca",
-    "secenekD": "Pers - Yunan",
+    "soruMetni": "Formula 1 tarihinde efsanevi pilot Michael Schumacher ile birlikte tam 7 kez Dünya Şampiyonu olarak rekoru paylaşan Britanyalı aktif yarış pilotu kimdir?",
+    "secenekA": "Max Verstappen",
+    "secenekB": "Lewis Hamilton",
+    "secenekC": "Sebastian Vettel",
+    "secenekD": "Fernando Alonso",
+    "dogruCevap": "B"
+  },
+  {
+    "soruMetni": "Rönesans döneminin en büyük dehalarından olan, Paris'teki Louvre Müzesi'nde sergilenen dünyaca ünlü 'Mona Lisa' tablosunun yaratıcısı ressam kimdir?",
+    "secenekA": "Vincent van Gogh",
+    "secenekB": "Leonardo da Vinci",
+    "secenekC": "Pablo Picasso",
+    "secenekD": "Michelangelo",
+    "dogruCevap": "B"
+  },
+  {
+    "soruMetni": "1973 yılında çıkardıkları 'The Dark Side of the Moon' albümüyle müzik tarihinde listelerde en uzun süre kalan progresif rock grubu hangisidir?",
+    "secenekA": "Pink Floyd",
+    "secenekB": "The Beatles",
+    "secenekC": "Nirvana",
+    "secenekD": "Radiohead",
     "dogruCevap": "A"
   },
   {
-    "soruMetni": "Matrix serisinde 'Seçilmiş Kişi' olan Neo (Thomas Anderson) karakterini canlandıran efsanevi aktör kimdir?",
-    "secenekA": "Brad Pitt",
-    "secenekB": "Tom Cruise",
-    "secenekC": "Keanu Reeves",
-    "secenekD": "Johnny Depp",
+    "soruMetni": "1953 yılında yaşamın temel şifresi olan DNA'nın 'İkili Sarmal' (Double Helix) yapısını keşfederek tıp ve biyoloji dünyasına çağ atlatan bilim insanları kimlerdir?",
+    "secenekA": "Louis Pasteur - Robert Koch",
+    "secenekB": "James Watson - Francis Crick",
+    "secenekC": "Marie Curie - Pierre Curie",
+    "secenekD": "Charles Darwin - Gregor Mendel",
+    "dogruCevap": "B"
+  },
+  {
+    "soruMetni": "1453 yılında Fatih Sultan Mehmet liderliğindeki Osmanlı ordusu tarafından fethedilerek Orta Çağ'ın kapanıp Yeni Çağ'ın açılmasına neden olan kadim şehir hangisidir?",
+    "secenekA": "Roma",
+    "secenekB": "Atina",
+    "secenekC": "İstanbul",
+    "secenekD": "Kahire",
     "dogruCevap": "C"
   },
   {
-    "soruMetni": "Dünyanın en derin noktası olan ve yaklaşık 11 bin metre derinliğe sahip Mariana Çukuru hangi okyanustadır?",
-    "secenekA": "Atlas Okyanusu",
-    "secenekB": "Hint Okyanusu",
-    "secenekC": "Büyük Okyanus (Pasifik)",
-    "secenekD": "Arktik Okyanusu",
-    "dogruCevap": "C"
-  },
-  {
-    "soruMetni": "1970'li yıllarda oyun dünyasını kasıp kavuran ve evlerimize giren ilk popüler video oyunu konsolu hangisidir?",
-    "secenekA": "PlayStation 1",
-    "secenekB": "Atari 2600",
-    "secenekC": "Nintendo NES",
-    "secenekD": "Sega Genesis",
+    "soruMetni": "Afrika kıtasında yer alan, Akdeniz'e dökülen ve yaklaşık 6.650 kilometre uzunluğuyla dünyanın EN UZUN nehri kabul edilen akarsu hangisidir?",
+    "secenekA": "Amazon Nehri",
+    "secenekB": "Nil Nehri",
+    "secenekC": "Mississippi Nehri",
+    "secenekD": "Ganj Nehri",
     "dogruCevap": "B"
   },
   {
-    "soruMetni": "Efsanevi 'You'll Never Walk Alone' (Asla Yalnız Yürümeyeceksin) marşıyla bilinen Anfield stadyumu hangi takıma aittir?",
-    "secenekA": "Manchester United",
-    "secenekB": "Liverpool",
-    "secenekC": "Chelsea",
-    "secenekD": "Galatasaray",
-    "dogruCevap": "B"
-  },
-  {
-    "soruMetni": "YouTube'da çektiği dev bütçeli çılgın yarışmalarla 200 milyondan fazla aboneye ulaşan dünyanın en popüler bireysel YouTuber'ı kimdir?",
-    "secenekA": "PewDiePie",
-    "secenekB": "MrBeast",
-    "secenekC": "Dude Perfect",
-    "secenekD": "Logan Paul",
-    "dogruCevap": "B"
+    "soruMetni": "1957 yılında Sovyetler Birliği tarafından uzaya fırlatılan ve insanlık tarihinin dünya yörüngesine oturtulan İLK yapay uydusu hangisidir?",
+    "secenekA": "Sputnik 1",
+    "secenekB": "Apollo 11",
+    "secenekC": "Hubble",
+    "secenekD": "Voyager 1",
+    "dogruCevap": "A"
   }
 ]
