@@ -59,6 +59,24 @@
     "dogruCevap": "C"
   },
   {
+    "soruMetni": "(6. Sınıf) Bir zindanda 3 tane 5 litrelik, 2 tane 3 litrelik ve 4 tane 1 litrelik su şişesi bulunmaktadır. Toplam kaç litre su vardır?",
+    "secenekA": "29",
+    "secenekB": "31",
+    "secenekC": "33",
+    "secenekD": "35",
+    "dogruCevap": "B"
+
+  },
+  {
+    "soruMetni": "(6. Sınıf) Bir okulda 240 öğrenci vardır. Bu öğrencilerin 3/8'ı erkektir. Erkek öğrencilerin sayısı kaçtır?",
+    "secenekA": "90",
+    "secenekB": "120",
+    "secenekC": "150",
+    "secenekD": "180",
+    "dogruCevap": "A"
+
+  },
+  {
     "soruMetni": "(6. Sınıf) Ölçüleri toplamı 90 derece olan tümler iki açıdan birinin ölçüsü 40 derece ise diğer açı kaç derecedir?",
     "secenekA": "40",
     "secenekB": "50",
