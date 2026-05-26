@@ -31,18 +31,28 @@ public class AudioManager : MonoBehaviour
         if (Instance == null) Instance = this;
         else { Destroy(gameObject); return; }
 
-        sfxSource             = gameObject.AddComponent<AudioSource>();
+        sfxSource = gameObject.AddComponent<AudioSource>();
         sfxSource.playOnAwake = false;
 
-        footstepSource             = gameObject.AddComponent<AudioSource>();
+        footstepSource = gameObject.AddComponent<AudioSource>();
         footstepSource.playOnAwake = false;
-        footstepSource.loop        = false;
+        footstepSource.loop = false;
     }
 
+    // Normal kısa sesler için
     public void Play(AudioClip clip, float volume = 1f)
     {
         if (clip == null || sfxSource == null) return;
         sfxSource.PlayOneShot(clip, volume);
+    }
+
+    // KAPI SESİ GÜNCELLEMESİ: Sesin üst üste binip uzamasını engeller
+    public void PlayDoorOpen()
+    {
+        if (doorOpen == null || sfxSource == null) return;
+        sfxSource.Stop();       // Çalan mevcut sesi keser
+        sfxSource.clip = doorOpen; 
+        sfxSource.Play();       // Yeni kapı sesini baştan başlatır
     }
 
     public void PlayFootstep(bool isRunning)
@@ -52,7 +62,7 @@ public class AudioManager : MonoBehaviour
         if (clip == null || footstepSource.isPlaying) return;
 
         footstepSource.Stop();
-        footstepSource.clip   = clip;
+        footstepSource.clip = clip;
         footstepSource.volume = isRunning ? 0.8f : 0.5f;
         footstepSource.Play();
     }
@@ -81,10 +91,9 @@ public class AudioManager : MonoBehaviour
 
     void PlaySwallow() => Play(canSwallow, 0.9f);
 
-    public void PlayHurt()      => Play(hurtSound,     0.9f);
+    public void PlayHurt()      => Play(hurtSound,    0.9f);
     public void PlayDeath()     => Play(deathSound,    1f);
     public void PlayPickup()    => Play(pickupSound,   0.7f);
-    public void PlayDoorOpen()  => Play(doorOpen,      1f);
     public void PlayCorrect()   => Play(correctAnswer, 1f);
     public void PlayWrong()     => Play(wrongAnswer,   1f);
     public void PlayPaperOpen() => Play(paperOpen,     1f);
