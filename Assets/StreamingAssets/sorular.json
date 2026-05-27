@@ -1,87 +1,66 @@
 [
   {
-    "soruMetni": "(4. Sınıf) 345.218 doğal sayısındaki 5 rakamının basamak değeri kaçtır?",
-    "secenekA": "50",
-    "secenekB": "500",
-    "secenekC": "5000",
-    "secenekD": "50000",
-    "dogruCevap": "C"
-  },
-  {
-    "soruMetni": "(4. Sınıf) Bir zindandaki 24 tavuğun ve 12 ineğin toplam ayak sayısı kaçtır?",
-    "secenekA": "72",
-    "secenekB": "84",
-    "secenekC": "96",
-    "secenekD": "108",
-    "dogruCevap": "C"
-  },
-  
-  {
-    "soruMetni": "(5. Sınıf) Okunuşu 'Sekiz milyon seksen bin seksen' olan gizemli sayının rakamla yazılışı hangisidir?",
-    "secenekA": "8.800.080",
-    "secenekB": "8.080.080",
-    "secenekC": "8.008.080",
-    "secenekD": "8.080.800",
-    "dogruCevap": "B"
-  },
-  
-  {
-    "soruMetni": "(5. Sınıf) Başlangıç noktası belli olan ancak diğer ucundan sonsuza kadar uzayan düz çizgiye (Örn: Meşale ışığı) ne ad verilir?",
-    "secenekA": "Doğru",
-    "secenekB": "Doğru Parçası",
-    "secenekC": "Işın",
-    "secenekD": "Açı",
-    "dogruCevap": "C"
-  },
-  {
-    "soruMetni": "(5. Sınıf) Kısa kenarı 6 metre, uzun kenarı 10 metre olan dikdörtgen şeklindeki bir zindan odasının çevresi kaç metredir?",
-    "secenekA": "16",
-    "secenekB": "32",
-    "secenekC": "60",
-    "secenekD": "80",
+    "soruMetni": "(4. Sınıf) Zindandaki gizli bir sandıktan 150 altın çıktı. Altınların 3/5'ini harcadık, geriye kaç altınımız kaldı?",
+    "secenekA": "45",
+    "secenekB": "60",
+    "secenekC": "75",
+    "secenekD": "90",
     "dogruCevap": "B"
   },
   {
-    "soruMetni": "(6. Sınıf) Üslü ifadelerde 2 üssü 4 (2⁴) ifadesinin değeri kaça eşittir?",
-    "secenekA": "8",
-    "secenekB": "12",
-    "secenekC": "16",
-    "secenekD": "32",
-    "dogruCevap": "C"
-  },
-  
-  {
-    "soruMetni": "(6. Sınıf) Deniz seviyesinin 15 metre altındaki bir su altı yaratığının konumu tam sayılarla nasıl ifade edilir?",
-    "secenekA": "+15",
-    "secenekB": "0",
-    "secenekC": "-15",
-    "secenekD": "-5",
-    "dogruCevap": "C"
-  },
-  {
-    "soruMetni": "(6. Sınıf) Bir zindanda 3 tane 5 litrelik, 2 tane 3 litrelik ve 4 tane 1 litrelik su şişesi bulunmaktadır. Toplam kaç litre su vardır?",
-    "secenekA": "29",
-    "secenekB": "31",
-    "secenekC": "33",
-    "secenekD": "35",
+    "soruMetni": "(4. Sınıf) Karanlık koridordaki her bir meşale 45 dakika yanmaktadır. Peş peşe yakılan 4 meşale toplam kaç saat ışık verir?",
+    "secenekA": "2",
+    "secenekB": "3",
+    "secenekC": "4",
+    "secenekD": "5",
     "dogruCevap": "B"
-
   },
   {
-    "soruMetni": "(6. Sınıf) Bir okulda 240 öğrenci vardır. Bu öğrencilerin 3/8'ı erkektir. Erkek öğrencilerin sayısı kaçtır?",
-    "secenekA": "90",
-    "secenekB": "120",
-    "secenekC": "150",
-    "secenekD": "180",
+    "soruMetni": "(4. Sınıf) Labirentteki kilitli kapıyı açmak için 4 basamaklı en küçük çift sayıyı şifre olarak girmeliyiz. Bu şifre kaçtır?",
+    "secenekA": "1000",
+    "secenekB": "1002",
+    "secenekC": "1024",
+    "secenekD": "9998",
     "dogruCevap": "A"
-
   },
   {
-    "soruMetni": "(6. Sınıf) Ölçüleri toplamı 90 derece olan tümler iki açıdan birinin ölçüsü 40 derece ise diğer açı kaç derecedir?",
-    "secenekA": "40",
-    "secenekB": "50",
-    "secenekC": "60",
-    "secenekD": "140",
+    "soruMetni": "(4. Sınıf) Zindandaki bir simyacı her gün 12 adet sağlık iksiri hazırlıyor. Bu simyacı 3 haftada toplam kaç iksir hazırlar?",
+    "secenekA": "216",
+    "secenekB": "240",
+    "secenekC": "252",
+    "secenekD": "264",
+    "dogruCevap": "C"
+  },
+  {
+    "soruMetni": "(4. Sınıf) Dikdörtgen şeklindeki gizli odanın uzun kenarı 18 metre, kısa kenarı ise uzun kenarının yarısı kadardır. Bu odanın çevresi kaç metredir?",
+    "secenekA": "36",
+    "secenekB": "45",
+    "secenekC": "54",
+    "secenekD": "72",
+    "dogruCevap": "C"
+  },
+  {
+    "soruMetni": "(4. Sınıf) Büyük salona giden koridorda 8 adet gizemli kapı var. Her kapının üzerinde 15 adet parlayan elmas çivili olduğuna göre, toplam elmas sayısı kaçtır?",
+    "secenekA": "100",
+    "secenekB": "110",
+    "secenekC": "120",
+    "secenekD": "130",
+    "dogruCevap": "C"
+  },
+  {
+    "soruMetni": "(4. Sınıf) Zindanda bulunan 432 adet sihirli anahtar, 18 farklı bölmeye eşit olarak paylaştırılacaktır. Her bölmeye kaç anahtar düşer?",
+    "secenekA": "22",
+    "secenekB": "24",
+    "secenekC": "26",
+    "secenekD": "28",
     "dogruCevap": "B"
+  },
+  {
+    "soruMetni": "(4. Sınıf) Labirentin çıkış kapısının duvarındaki gizli açıyı ölçtük ve 115 derece bulduk. Bu açı çeşidi aşağıdakilerden hangisidir?",
+    "secenekA": "Dar Açı",
+    "secenekB": "Dik Açı",
+    "secenekC": "Geniş Açı",
+    "secenekD": "Doğru Açı",
+    "dogruCevap": "C"
   }
 ]

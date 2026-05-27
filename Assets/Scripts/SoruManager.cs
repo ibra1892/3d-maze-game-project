@@ -28,7 +28,7 @@ public class SoruManager : MonoBehaviour
     public TextMeshProUGUI soruText;  
     public Button[] cevapButonlari;   
     public TextMeshProUGUI kapiSkorText; 
-    public Image skorBarFill; // Kanka, yeni eklediğimiz doldurma resmi (SkorBar_Doldurma)
+    public Image skorBarFill; 
 
     public static SoruManager instance;
     
@@ -37,8 +37,8 @@ public class SoruManager : MonoBehaviour
     private SoruData aktifSoru;
 
     private int acilanKapiSayisi = 0;
-    private int toplamKapiSayisi;
-    private Coroutine barAnimasyonCoroutine; // Bar animasyonunu kontrol etmek için
+    private int toplamKapiSayisi = 1; // Başlangıçta 0'a bölmeyi engellemek için 1 verelim
+    private Coroutine barAnimasyonCoroutine; 
 
     void Awake()
     {
@@ -49,10 +49,7 @@ public class SoruManager : MonoBehaviour
     void Start()
     {
         soruPaneli.SetActive(false);
-        
-        // Oyun başında barı sıfırdan başlatıyoruz kanka
         if (skorBarFill != null) skorBarFill.fillAmount = 0f;
-        
         SkorGuncelleUI(); 
     }
 
@@ -67,13 +64,16 @@ public class SoruManager : MonoBehaviour
             if (yuklenenSorular != null && yuklenenSorular.sorular != null)
             {
                 tumSorular.AddRange(yuklenenSorular.sorular);
-                toplamKapiSayisi = tumSorular.Count;
+                toplamKapiSayisi = tumSorular.Count > 0 ? tumSorular.Count : 1;
             }
         }
     }
 
     public void SoruSor(GameObject kapi)
     {
+        // 🛡️ E tuşu spam koruması
+        if (soruPaneli.activeSelf) return; 
+
         if (tumSorular.Count == 0)
         {
             kapi.SendMessage("KapıyıAc", SendMessageOptions.DontRequireReceiver);
@@ -100,7 +100,7 @@ public class SoruManager : MonoBehaviour
         soruText.text = aktifSoru.soruMetni;
         cevapButonlari[0].GetComponentInChildren<TextMeshProUGUI>().text = "A) " + aktifSoru.secenekA;
         cevapButonlari[1].GetComponentInChildren<TextMeshProUGUI>().text = "B) " + aktifSoru.secenekB;
-        cevapButonlari[2].GetComponentInChildren<TextMeshProUGUI>().text = "C) " + aktifSoru.secenekC; // Kullanıcının orijinal kodundaki eşitleme
+        cevapButonlari[2].GetComponentInChildren<TextMeshProUGUI>().text = "C) " + aktifSoru.secenekC; 
         cevapButonlari[3].GetComponentInChildren<TextMeshProUGUI>().text = "D) " + aktifSoru.secenekD;
     }
 
@@ -135,7 +135,7 @@ public class SoruManager : MonoBehaviour
             if (tiklananButonIndeksi != -1 && tiklananButonIndeksi < cevapButonlari.Length)
                 cevapButonlari[tiklananButonIndeksi].image.color = new Color(1f, 0.25f, 0.25f, 1f); 
 
-            soruText.text = "<color=red>⚠️ YANLIŞ CEVAP! Tekrar dene brom! ⚠️</color>\n\n" + aktifSoru.soruMetni;
+            soruText.text = "<color=red> YANLIŞ CEVAP !</color>\n\n" + aktifSoru.soruMetni;
         }
     }
 
@@ -144,7 +144,6 @@ public class SoruManager : MonoBehaviour
         if (kapiSkorText != null)
             kapiSkorText.text = "Açılan Kapı: " + acilanKapiSayisi + " / " + toplamKapiSayisi;
 
-        // Kanka bar atandıysa, her kapı açıldığında akıcı dolma animasyonunu başlatıyoruz
         if (skorBarFill != null && toplamKapiSayisi > 0)
         {
             float hedefDoluluk = (float)acilanKapiSayisi / toplamKapiSayisi;
@@ -153,12 +152,11 @@ public class SoruManager : MonoBehaviour
         }
     }
 
-    // Barın sağa doğru kayarak yumuşacık dolmasını sağlayan coroutine
     private IEnumerator YavascaBariDoldur(float hedef)
     {
         float baslangicFill = skorBarFill.fillAmount;
         float gecenSure = 0f;
-        float animasyonSuresi = 0.4f; // Barın dolma hızı (0.4 saniye ideal kanka)
+        float animasyonSuresi = 0.4f; 
 
         while (gecenSure < animasyonSuresi)
         {
@@ -185,5 +183,10 @@ public class SoruManager : MonoBehaviour
             yield return null;
         }
         panelTransform.localPosition = orijinalPozisyon;
+    }
+
+    public bool TumSorularCozulduMu()
+    {
+        return acilanKapiSayisi >= toplamKapiSayisi;
     }
 }
