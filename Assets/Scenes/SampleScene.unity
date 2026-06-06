@@ -3766,7 +3766,7 @@ MonoBehaviour:
   bandageRip: {fileID: 8300000, guid: 9a61a307305a4204d9f63e6268c31857, type: 3}
   canOpen: {fileID: 8300000, guid: 6e12f7f782d385f42ab5c73f30d77bc2, type: 3}
   canSwallow: {fileID: 8300000, guid: 7860f0fd1c15a3740bbc378c72f749b0, type: 3}
-  doorOpen: {fileID: 8300000, guid: d227901fe0a2bc344b9f2f6aa748f937, type: 3}
+  doorOpen: {fileID: 8300000, guid: 96302dc5ccc7247438087d941a30e54f, type: 3}
   correctAnswer: {fileID: 8300000, guid: 96302dc5ccc7247438087d941a30e54f, type: 3}
   wrongAnswer: {fileID: 8300000, guid: c2d5726bae126f64fbaab08568e66ae5, type: 3}
   paperOpen: {fileID: 8300000, guid: 692ca763a1a01b94585878c9106b5d4e, type: 3}
