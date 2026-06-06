@@ -29,6 +29,7 @@ public class SoruManager : MonoBehaviour
     public Button[] cevapButonlari;   
     public TextMeshProUGUI kapiSkorText; 
     public Image skorBarFill; 
+    public Color normalButonRengi = Color.white; 
 
     public static SoruManager instance;
     
@@ -74,15 +75,20 @@ public class SoruManager : MonoBehaviour
         // 🛡️ E tuşu spam koruması
         if (soruPaneli.activeSelf) return; 
 
+        // 💡 Eğer JSON'daki tüm sorular bittiyse (12/12 olduysa)
         if (tumSorular.Count == 0)
         {
+            acilanKapiSayisi++; // Soru olmasa da açılan kapı sayısını artır!
+            SkorGuncelleUI();   // Arayüze 13/12, 14/12 diye yazdır!
+            
             kapi.SendMessage("KapıyıAc", SendMessageOptions.DontRequireReceiver);
             return;
         }
 
         foreach (Button btn in cevapButonlari)
         {
-            if (btn != null && btn.image != null) btn.image.color = Color.white; 
+            // 🛠️ Zorla bembeyaz yapmak yerine artık senin Inspector'dan seçeceğin rengi basacak!
+            if (btn != null && btn.image != null) btn.image.color = normalButonRengi; 
         }
 
         suAnkiKapi = kapi; 
@@ -147,6 +153,7 @@ public class SoruManager : MonoBehaviour
         if (skorBarFill != null && toplamKapiSayisi > 0)
         {
             float hedefDoluluk = (float)acilanKapiSayisi / toplamKapiSayisi;
+            // 🛠️ YAZIM HATASI BURADAYDI, TERTEMİZ DÜZELTİLDİ:
             if (barAnimasyonCoroutine != null) StopCoroutine(barAnimasyonCoroutine);
             barAnimasyonCoroutine = StartCoroutine(YavascaBariDoldur(hedefDoluluk));
         }
@@ -164,7 +171,7 @@ public class SoruManager : MonoBehaviour
             skorBarFill.fillAmount = Mathf.Lerp(baslangicFill, hedef, gecenSure / animasyonSuresi);
             yield return null;
         }
-        skorBarFill.fillAmount = hedef;
+        skorBarFill.fillAmount = float.IsNaN(hedef) ? 0f : hedef;
     }
 
     private IEnumerator SallamaEfekti()
