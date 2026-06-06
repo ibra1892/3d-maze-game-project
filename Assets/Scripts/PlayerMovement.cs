@@ -44,6 +44,7 @@ public class PlayerMovement : MonoBehaviour
     [HideInInspector] public float HP;
     [HideInInspector] public float Stamina;
     [HideInInspector] public bool  canMove = true;
+    [HideInInspector] public bool staminaInfinite = false;
 
     // ═══════════════════════════════════════════════════════
     //  PRIVATE
@@ -207,7 +208,8 @@ public class PlayerMovement : MonoBehaviour
 
         if (running && !isExhausted && Stamina > 0)
         {
-            Stamina -= staminaDrain * Time.deltaTime;
+            if (!staminaInfinite)
+                Stamina -= staminaDrain * Time.deltaTime;
             staminaCooldownTimer = staminaWaitTime;
         }
         else
@@ -286,8 +288,12 @@ public class PlayerMovement : MonoBehaviour
     {
         walkSpeed += bonus;
         runSpeed  += bonus;
+        staminaInfinite = true;    // ← ekle
+
         yield return new WaitForSeconds(duration);
+
         walkSpeed -= bonus;
         runSpeed  -= bonus;
+        staminaInfinite = false;   // ← ekle
     }
 }
