@@ -1,66 +1,50 @@
 [
   {
-    "soruMetni": "(4. Sınıf) Zindandaki gizli bir sandıktan 150 altın çıktı. Altınların 3/5'ini harcadık, geriye kaç altınımız kaldı?",
-    "secenekA": "45",
-    "secenekB": "60",
-    "secenekC": "75",
-    "secenekD": "90",
+    "soruMetni": "İstiklal Marşı'mızın şairi aşağıdakilerden hangisidir?",
+    "secenekA": "Cemal Süreya",
+    "secenekB": "Mehmet Akif Ersoy",
+    "secenekC": "Nazım Hikmet",
+    "secenekD": "Necip Fazıl Kısakürek",
     "dogruCevap": "B"
   },
   {
-    "soruMetni": "(4. Sınıf) Karanlık koridordaki her bir meşale 45 dakika yanmaktadır. Peş peşe yakılan 4 meşale toplam kaç saat ışık verir?",
-    "secenekA": "2",
-    "secenekB": "3",
-    "secenekC": "4",
-    "secenekD": "5",
+    "soruMetni": "Kimyadaki temel yaşam kaynağımız olan suyun kimyasal formülü aşağıdakilerden hangisidir?",
+    "secenekA": "CO2",
+    "secenekB": "H2O",
+    "secenekC": "O2",
+    "secenekD": "NaCl",
     "dogruCevap": "B"
   },
   {
-    "soruMetni": "(4. Sınıf) Labirentteki kilitli kapıyı açmak için 4 basamaklı en küçük çift sayıyı şifre olarak girmeliyiz. Bu şifre kaçtır?",
-    "secenekA": "1000",
-    "secenekB": "1002",
-    "secenekC": "1024",
-    "secenekD": "9998",
+    "soruMetni": "Yüzeyindeki demir oksitten dolayı 'Kızıl Gezegen' olarak da bilinen Güneş sistemindeki gezegen hangisidir?",
+    "secenekA": "Venüs",
+    "secenekB": "Jüpiter",
+    "secenekC": "Mars",
+    "secenekD": "Satürn",
+    "dogruCevap": "C"
+  },
+  {
+    "soruMetni": "Pusulayı ve kağıdı icat ederek dünya tarihinin seyrini değiştiren kadim medeniyet hangisidir?",
+    "secenekA": "Çin",
+    "secenekB": "Mısır",
+    "secenekC": "Roma",
+    "secenekD": "Yunanistan",
     "dogruCevap": "A"
   },
   {
-    "soruMetni": "(4. Sınıf) Zindandaki bir simyacı her gün 12 adet sağlık iksiri hazırlıyor. Bu simyacı 3 haftada toplam kaç iksir hazırlar?",
-    "secenekA": "216",
-    "secenekB": "240",
-    "secenekC": "252",
-    "secenekD": "264",
+    "soruMetni": "Dünyanın en ünlü sanat eserlerinden biri olan 'Mona Lisa' tablosunu yapan İtalyan rönesans ressamı kimdir?",
+    "secenekA": "Vincent van Gogh",
+    "secenekB": "Pablo Picasso",
+    "secenekC": "Leonardo da Vinci",
+    "secenekD": "Michelangelo",
     "dogruCevap": "C"
   },
   {
-    "soruMetni": "(4. Sınıf) Dikdörtgen şeklindeki gizli odanın uzun kenarı 18 metre, kısa kenarı ise uzun kenarının yarısı kadardır. Bu odanın çevresi kaç metredir?",
-    "secenekA": "36",
-    "secenekB": "45",
-    "secenekC": "54",
-    "secenekD": "72",
-    "dogruCevap": "C"
-  },
-  {
-    "soruMetni": "(4. Sınıf) Büyük salona giden koridorda 8 adet gizemli kapı var. Her kapının üzerinde 15 adet parlayan elmas çivili olduğuna göre, toplam elmas sayısı kaçtır?",
-    "secenekA": "100",
-    "secenekB": "110",
-    "secenekC": "120",
-    "secenekD": "130",
-    "dogruCevap": "C"
-  },
-  {
-    "soruMetni": "(4. Sınıf) Zindanda bulunan 432 adet sihirli anahtar, 18 farklı bölmeye eşit olarak paylaştırılacaktır. Her bölmeye kaç anahtar düşer?",
-    "secenekA": "22",
-    "secenekB": "24",
-    "secenekC": "26",
-    "secenekD": "28",
-    "dogruCevap": "B"
-  },
-  {
-    "soruMetni": "(4. Sınıf) Labirentin çıkış kapısının duvarındaki gizli açıyı ölçtük ve 115 derece bulduk. Bu açı çeşidi aşağıdakilerden hangisidir?",
-    "secenekA": "Dar Açı",
-    "secenekB": "Dik Açı",
-    "secenekC": "Geniş Açı",
-    "secenekD": "Doğru Açı",
+    "soruMetni": "Dünyadaki tüm kıtaların kardeşliğini ve birliğini simgeleyen Olimpiyat Oyunları logosunda kaç adet renkli halka bulunur?",
+    "secenekA": "3",
+    "secenekB": "4",
+    "secenekC": "5",
+    "secenekD": "6",
     "dogruCevap": "C"
   }
 ]
