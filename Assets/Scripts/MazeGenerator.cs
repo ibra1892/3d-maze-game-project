@@ -12,6 +12,8 @@ public class MazeGenerator : MonoBehaviour
     public GameObject wallPrefab;
     public GameObject floorPrefab;
     public GameObject kapiPrefab; 
+    // ---> YENİ: MEŞALE PREFABI EKLENDİ <---
+    public GameObject mesalePrefab; 
     
     [Header("Özel Objeler")]
     public GameObject cikisKapisiPrefab; 
@@ -19,6 +21,9 @@ public class MazeGenerator : MonoBehaviour
     [Header("Ayarlar")]
     public int kapiSayisi = 20; 
     public float kapiMesafeSiniri = 8f; 
+    // ---> YENİ: MEŞALE YOĞUNLUĞU (%10 İHTİMAL) <---
+    [Range(0, 100)]
+    public int mesaleYogunlugu = 10; 
 
     private int[,] mazeGrid;
     private List<Vector2Int> yolListesi = new List<Vector2Int>(); 
@@ -41,9 +46,9 @@ public class MazeGenerator : MonoBehaviour
         KostebekKazisi(1, 1);
 
         mazeGrid[1, 0] = 0; 
-        
-        // Çıkış yolunu (en sağ üst köşe) açıyoruz
         mazeGrid[genislik - 2, uzunluk - 1] = 0; 
+
+        EkstraYollarAc();
 
         LabirentiSahneyeCiz();
         
@@ -83,6 +88,51 @@ public class MazeGenerator : MonoBehaviour
         }
     }
 
+    void EkstraYollarAc()
+    {
+        int kirilacakSayi = (genislik * uzunluk) / 30; 
+        int kirilan = 0;
+        int maxDeneme = 5000;
+
+        while (kirilan < kirilacakSayi && maxDeneme > 0)
+        {
+            maxDeneme--;
+            int x = Random.Range(1, genislik - 1);
+            int z = Random.Range(1, uzunluk - 1);
+
+            if (mazeGrid[x, z] == 1)
+            {
+                bool ustYol = mazeGrid[x, z + 1] == 0;
+                bool altYol = mazeGrid[x, z - 1] == 0;
+                bool sagYol = mazeGrid[x + 1, z] == 0;
+                bool solYol = mazeGrid[x - 1, z] == 0;
+
+                bool yatayBaglanti = solYol && sagYol && !ustYol && !altYol;
+                bool dikeyBaglanti = ustYol && altYol && !solYol && !sagYol;
+
+                if (yatayBaglanti || dikeyBaglanti)
+                {
+                    if (!BoslukYaratirMi(x, z))
+                    {
+                        mazeGrid[x, z] = 0; 
+                        yolListesi.Add(new Vector2Int(x, z));
+                        kirilan++;
+                    }
+                }
+            }
+        }
+    }
+
+    bool BoslukYaratirMi(int x, int z)
+    {
+        if (mazeGrid[x - 1, z] == 0 && mazeGrid[x, z - 1] == 0 && mazeGrid[x - 1, z - 1] == 0) return true; 
+        if (mazeGrid[x + 1, z] == 0 && mazeGrid[x, z - 1] == 0 && mazeGrid[x + 1, z - 1] == 0) return true; 
+        if (mazeGrid[x - 1, z] == 0 && mazeGrid[x, z + 1] == 0 && mazeGrid[x - 1, z + 1] == 0) return true; 
+        if (mazeGrid[x + 1, z] == 0 && mazeGrid[x, z + 1] == 0 && mazeGrid[x + 1, z + 1] == 0) return true; 
+        
+        return false;
+    }
+
     void LabirentiSahneyeCiz()
     {
         for (int x = 0; x < genislik; x++)
@@ -98,6 +148,22 @@ public class MazeGenerator : MonoBehaviour
                 {
                     Vector3 zeminPozisyonu = new Vector3(x * 2f, 0, z * 2f);
                     Instantiate(floorPrefab, zeminPozisyonu, Quaternion.identity, transform);
+
+                    // ---> OTOMATİK MEŞALE YERLEŞTİRİCİ <---
+                    // Boş yollara (zemine) duvarın içine girmemesi için meşale yerleştiriyoruz.
+                    if (mesalePrefab != null)
+                    {
+                        // Başlangıç ve çıkış kapısına çok dip dibe koymamak için minik güvenlik
+                        if ((x > 1 || z > 1) && (x < genislik - 2 || z < uzunluk - 2)) 
+                        {
+                            if (Random.Range(0, 100) < mesaleYogunlugu)
+                            {
+                                // Yüksekliği 1f yaptık ki meşale tam yerde kalmasın, göz hizasına gelsin
+                                Vector3 mesalePozisyonu = new Vector3(x * 2f, 1f, z * 2f); 
+                                Instantiate(mesalePrefab, mesalePozisyonu, Quaternion.identity, transform);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -108,10 +174,7 @@ public class MazeGenerator : MonoBehaviour
         if (cikisKapisiPrefab != null)
         {
             Vector3 cikisPozisyonu = new Vector3((genislik - 2) * 2f, 0, (uzunluk - 1) * 2f);
-            
-            // 🎯 YÖN BURADA DÜZELTİLDİ: 90 yerine 0 yapıldı, artık koridoru tam karşıdan kapatacak!
             Quaternion kapiYonu = Quaternion.Euler(0, 0, 0); 
-            
             Instantiate(cikisKapisiPrefab, cikisPozisyonu, kapiYonu, transform);
         }
     }
