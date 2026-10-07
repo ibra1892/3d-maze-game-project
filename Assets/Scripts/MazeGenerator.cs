@@ -47,7 +47,6 @@ public class MazeGenerator : MonoBehaviour
 
         LabirentiSahneyeCiz();
         
-        // 🎯 İŞTE KAYBOLAN O KOMUT BURASIYDI: Çıkış kapısını sahneye koyar
         CikisKapisiniYerlestir(); 
         
         KapilariYerlestir(); 
@@ -104,13 +103,15 @@ public class MazeGenerator : MonoBehaviour
         }
     }
 
-    // 🎯 SİLİNEN KISIM BURASIYDI: Kapıyı hesaplayıp sahneye yerleştiren fonksiyon
     void CikisKapisiniYerlestir()
     {
         if (cikisKapisiPrefab != null)
         {
             Vector3 cikisPozisyonu = new Vector3((genislik - 2) * 2f, 0, (uzunluk - 1) * 2f);
-            Quaternion kapiYonu = Quaternion.Euler(0, 90, 0); 
+            
+            // 🎯 YÖN BURADA DÜZELTİLDİ: 90 yerine 0 yapıldı, artık koridoru tam karşıdan kapatacak!
+            Quaternion kapiYonu = Quaternion.Euler(0, 0, 0); 
+            
             Instantiate(cikisKapisiPrefab, cikisPozisyonu, kapiYonu, transform);
         }
     }

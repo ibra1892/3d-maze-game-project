@@ -15546,7 +15546,7 @@ MonoBehaviour:
   wallPrefab: {fileID: 6177955216275237941, guid: 8dff56d2b65688c41900dba205ec1f89, type: 3}
   floorPrefab: {fileID: 404681588854098763, guid: f9c4f6157fd5bbf44ac9aed14ed6d31c, type: 3}
   kapiPrefab: {fileID: 8631691907161228608, guid: 9aecdcc11aeecdc4a98a322400244744, type: 3}
-  cikisKapisiPrefab: {fileID: 7272143559014436153, guid: 0f96008cdf78df94680cbf19ba0a818d, type: 3}
+  cikisKapisiPrefab: {fileID: 8631691907161228608, guid: b8f533d8864eef54eb8993bc41431049, type: 3}
   kapiSayisi: 20
   kapiMesafeSiniri: 6
 --- !u!1 &891207655
