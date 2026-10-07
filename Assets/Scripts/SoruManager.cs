@@ -38,7 +38,10 @@ public class SoruManager : MonoBehaviour
     private SoruData aktifSoru;
 
     private int acilanKapiSayisi = 0;
-    private int toplamKapiSayisi = 1; // Başlangıçta 0'a bölmeyi engellemek için 1 verelim
+    
+    // 🎯 İŞTE DÜZELTİLEN YER: private yerine public yaptık ki MazeGenerator buraya ulaşabilsin
+    public int toplamKapiSayisi = 1; 
+    
     private Coroutine barAnimasyonCoroutine; 
 
     void Awake()
@@ -72,14 +75,19 @@ public class SoruManager : MonoBehaviour
 
     public void SoruSor(GameObject kapi)
     {
-        // 🛡️ E tuşu spam koruması
         if (soruPaneli.activeSelf) return; 
 
-        // 💡 Eğer JSON'daki tüm sorular bittiyse (12/12 olduysa)
         if (tumSorular.Count == 0)
         {
-            acilanKapiSayisi++; // Soru olmasa da açılan kapı sayısını artır!
-            SkorGuncelleUI();   // Arayüze 13/12, 14/12 diye yazdır!
+            // SAYAÇ FRENİ EKLENDİ
+            if (acilanKapiSayisi < toplamKapiSayisi)
+            {
+                acilanKapiSayisi++; 
+                SkorGuncelleUI();   
+            }
+            
+            // UNUTULAN SES EFEKTİ EKLENDİ
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayDoorOpen();
             
             kapi.SendMessage("KapıyıAc", SendMessageOptions.DontRequireReceiver);
             return;
@@ -87,7 +95,6 @@ public class SoruManager : MonoBehaviour
 
         foreach (Button btn in cevapButonlari)
         {
-            // 🛠️ Zorla bembeyaz yapmak yerine artık senin Inspector'dan seçeceğin rengi basacak!
             if (btn != null && btn.image != null) btn.image.color = normalButonRengi; 
         }
 
@@ -97,6 +104,7 @@ public class SoruManager : MonoBehaviour
         if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperOpen();
 
         Time.timeScale = 0; 
+        // Fareyi görünür ve serbest yapıyoruz
         Cursor.lockState = CursorLockMode.None; 
         Cursor.visible = true;
 
@@ -116,13 +124,20 @@ public class SoruManager : MonoBehaviour
         {
             if (AudioManager.Instance != null) AudioManager.Instance.PlayDoorOpen(); 
 
-            acilanKapiSayisi++;
+            // SAYAÇ FRENİ EKLENDİ
+            if (acilanKapiSayisi < toplamKapiSayisi)
+            {
+                acilanKapiSayisi++;
+            }
             SkorGuncelleUI();
 
             tumSorular.Remove(aktifSoru); 
             soruPaneli.SetActive(false); 
             Time.timeScale = 1;          
+            
+            // Fareyi tekrar kilitliyor ve gizliyoruz
             Cursor.lockState = CursorLockMode.Locked; 
+            Cursor.visible = false;
             
             if (suAnkiKapi != null) suAnkiKapi.SendMessage("KapıyıAc", SendMessageOptions.DontRequireReceiver); 
         }
@@ -153,7 +168,6 @@ public class SoruManager : MonoBehaviour
         if (skorBarFill != null && toplamKapiSayisi > 0)
         {
             float hedefDoluluk = (float)acilanKapiSayisi / toplamKapiSayisi;
-            // 🛠️ YAZIM HATASI BURADAYDI, TERTEMİZ DÜZELTİLDİ:
             if (barAnimasyonCoroutine != null) StopCoroutine(barAnimasyonCoroutine);
             barAnimasyonCoroutine = StartCoroutine(YavascaBariDoldur(hedefDoluluk));
         }

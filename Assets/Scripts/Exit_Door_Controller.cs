@@ -10,11 +10,10 @@ public class Exit_Door_Controller : MonoBehaviour
     private Vector3 hedefPozisyonu;
 
     [Header("Kapı Hareket Ayarları")]
-    public float yukselmeMiktari = 3.5f; 
+    public float yukselmeMiktari = 8f; 
     public float acilmaHizi = 2.5f;     
 
     [Header("UI Ayarları")]
-    // 🎯 KANKA BURASI DEĞİŞTİ: Artık sadece yazıyı değil, tüm paneli kontrol etmesi için GameObject yaptık!
     public GameObject mesajPaneli; 
     private TextMeshProUGUI mesajText; 
 
@@ -26,11 +25,22 @@ public class Exit_Door_Controller : MonoBehaviour
         baslangicPozisyonu = transform.position;
         hedefPozisyonu = baslangicPozisyonu + Vector3.up * yukselmeMiktari;
 
-        // Oyun başlar başlamaz o parşömen panelini kod yardımıyla tamamen gizliyoruz kanka
+        // 🎯 2. SORUNUN ÇÖZÜMÜ: Panel koptuysa oyuna girince Canvas'ı arayıp otomatik bulur
+        if (mesajPaneli == null)
+        {
+            GameObject canvas = GameObject.Find("Canvas");
+            if (canvas != null)
+            {
+                Transform panel = canvas.transform.Find("ExitMessagePanel");
+                if (panel != null) mesajPaneli = panel.gameObject;
+            }
+        }
+
+        // Bulduğu paneli gizler ve yazı bileşenini alır
         if (mesajPaneli != null)
         {
             mesajText = mesajPaneli.GetComponentInChildren<TextMeshProUGUI>();
-            mesajPaneli.SetActive(false);
+            mesajPaneli.SetActive(false); 
         }
 
         GameObject playerObj = GameObject.FindWithTag("Player");
@@ -43,7 +53,8 @@ public class Exit_Door_Controller : MonoBehaviour
 
         if (kapiAciliyorMu)
         {
-            transform.position = Vector3.MoveTowards(transform.position, hedefPozisyonu, acilmaHizi * Time.deltaTime);
+            // Zaman durduğunda bile kapının animasyonu devam etsin
+            transform.position = Vector3.MoveTowards(transform.position, hedefPozisyonu, acilmaHizi * Time.unscaledDeltaTime);
             return;
         }
 
@@ -63,32 +74,39 @@ public class Exit_Door_Controller : MonoBehaviour
             {
                 kapiAciliyorMu = true;
                 
-                string basariMesaji = "<b><size=140%><color=#145A32>TEBRİKLER!</color></size></b>\n\n" +
-                                      "<size=95%><color=#2C1A0C>Labirentten basarıyla cıktınız</color></size>";
+                string basariMesaji = "<b><size=140%><color=#145A32>TEBRIKLER!</color></size></b>\n\n" +
+                                      "<size=95%><color=#2C1A0C>Labirentten basariyla ciktiniz.</color></size>";
                 
-                StartCoroutine(MesajGoster(basariMesaji));
+                mesajText.text = basariMesaji;
+                mesajPaneli.SetActive(true);
                 
                 Collider col = GetComponent<Collider>();
                 if (col != null) col.enabled = false;
+
+                if (AudioManager.Instance != null) AudioManager.Instance.PlayDoorOpen();
+                
+                Time.timeScale = 0; 
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
             }
             else
             {
-                string uyariMesaji = "<b><size=140%><color=#800000>KAPI KİLİTLİ</color></size></b>\n\n" +
-                                     "<size=95%><color=#2C1A0C>Labirentteki tüm soruları çözmeden buradan çıkamazsın.</color></size>";
+                string uyariMesaji = "<b><size=140%><color=#800000>KAPI KILITLI</color></size></b>\n\n" +
+                                     "<size=95%><color=#2C1A0C>Labirentteki tum sorulari cozmeden buradan çikamazsin.</color></size>";
                 
-                StartCoroutine(MesajGoster(uyariMesaji));
+                StartCoroutine(UyariGoster(uyariMesaji));
             }
         }
     }
 
-    IEnumerator MesajGoster(string mesaj)
+    IEnumerator UyariGoster(string mesaj)
     {
         if (mesajPaneli != null && mesajText != null)
         {
             mesajText.text = mesaj;
-            mesajPaneli.SetActive(true); // 🎯 E'ye basınca tüm parşömeni ve yazıyı aynı anda havaya kaldırır!
+            mesajPaneli.SetActive(true); 
             yield return new WaitForSeconds(3.5f);
-            mesajPaneli.SetActive(false); // Süre bitince paneli komple tekrar pusuya yatırır.
+            mesajPaneli.SetActive(false); 
         }
     }
 }

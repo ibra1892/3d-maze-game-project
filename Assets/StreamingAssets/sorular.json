@@ -1,50 +1,82 @@
 [
   {
-    "soruMetni": "İstiklal Marşı'mızın şairi aşağıdakilerden hangisidir?",
-    "secenekA": "Cemal Süreya",
-    "secenekB": "Mehmet Akif Ersoy",
-    "secenekC": "Nazım Hikmet",
-    "secenekD": "Necip Fazıl Kısakürek",
-    "dogruCevap": "B"
-  },
-  {
-    "soruMetni": "Kimyadaki temel yaşam kaynağımız olan suyun kimyasal formülü aşağıdakilerden hangisidir?",
-    "secenekA": "CO2",
-    "secenekB": "H2O",
-    "secenekC": "O2",
-    "secenekD": "NaCl",
-    "dogruCevap": "B"
-  },
-  {
-    "soruMetni": "Yüzeyindeki demir oksitten dolayı 'Kızıl Gezegen' olarak da bilinen Güneş sistemindeki gezegen hangisidir?",
-    "secenekA": "Venüs",
-    "secenekB": "Jüpiter",
-    "secenekC": "Mars",
-    "secenekD": "Satürn",
+    "soruMetni": "Türkiye Cumhuriyeti'nin ilk Cumhurbaşkanı kimdir?",
+    "secenekA": "İsmet İnönü",
+    "secenekB": "Celal Bayar",
+    "secenekC": "Mustafa Kemal Atatürk",
+    "secenekD": "Fevzi Çakmak",
     "dogruCevap": "C"
   },
   {
-    "soruMetni": "Pusulayı ve kağıdı icat ederek dünya tarihinin seyrini değiştiren kadim medeniyet hangisidir?",
-    "secenekA": "Çin",
-    "secenekB": "Mısır",
-    "secenekC": "Roma",
-    "secenekD": "Yunanistan",
+    "soruMetni": "İnsan vücudunda kanı tüm vücuda pompalayan organ hangisidir?",
+    "secenekA": "Akciğer",
+    "secenekB": "Karaciğer",
+    "secenekC": "Böbrek",
+    "secenekD": "Kalp",
+    "dogruCevap": "D"
+  },
+  {
+    "soruMetni": "Güneş sisteminin en büyük gezegeni hangisidir?",
+    "secenekA": "Jüpiter",
+    "secenekB": "Satürn",
+    "secenekC": "Neptün",
+    "secenekD": "Dünya",
     "dogruCevap": "A"
   },
   {
-    "soruMetni": "Dünyanın en ünlü sanat eserlerinden biri olan 'Mona Lisa' tablosunu yapan İtalyan rönesans ressamı kimdir?",
-    "secenekA": "Vincent van Gogh",
-    "secenekB": "Pablo Picasso",
-    "secenekC": "Leonardo da Vinci",
-    "secenekD": "Michelangelo",
+    "soruMetni": "Matbaayı icat ederek bilginin yayılmasında çığır açan kişi kimdir?",
+    "secenekA": "Leonardo da Vinci",
+    "secenekB": "Johannes Gutenberg",
+    "secenekC": "Galileo Galilei",
+    "secenekD": "Isaac Newton",
+    "dogruCevap": "B"
+  },
+  {
+    "soruMetni": "Periyodik tabloda simgesi 'Au' olan element aşağıdakilerden hangisidir?",
+    "secenekA": "Gümüş",
+    "secenekB": "Alüminyum",
+    "secenekC": "Altın",
+    "secenekD": "Argon",
     "dogruCevap": "C"
   },
   {
-    "soruMetni": "Dünyadaki tüm kıtaların kardeşliğini ve birliğini simgeleyen Olimpiyat Oyunları logosunda kaç adet renkli halka bulunur?",
-    "secenekA": "3",
-    "secenekB": "4",
-    "secenekC": "5",
-    "secenekD": "6",
+    "soruMetni": "Dünyanın en uzun nehirlerinden biri olan ve Mısır'ın can damarı sayılan nehir hangisidir?",
+    "secenekA": "Amazon",
+    "secenekB": "Tuna",
+    "secenekC": "Nil",
+    "secenekD": "Fırat",
     "dogruCevap": "C"
+  },
+  {
+    "soruMetni": "İstanbul'u 1453 yılında fetheden Osmanlı padişahı kimdir?",
+    "secenekA": "Yavuz Sultan Selim",
+    "secenekB": "Kanuni Sultan Süleyman",
+    "secenekC": "II. Murat",
+    "secenekD": "Fatih Sultan Mehmet",
+    "dogruCevap": "D"
+  },
+  {
+    "soruMetni": "Bitkilerin güneş ışığını kullanarak besin üretmesine ne ad verilir?",
+    "secenekA": "Solunum",
+    "secenekB": "Fotosentez",
+    "secenekC": "Sindirim",
+    "secenekD": "Terleme",
+    "dogruCevap": "B"
+  },
+  {
+    "soruMetni": "Bir futbol maçında sahada her takımdan kaç oyuncu bulunur?",
+    "secenekA": "9",
+    "secenekB": "10",
+    "secenekC": "11",
+    "secenekD": "12",
+    "dogruCevap": "C"
+  },
+  {
+    "soruMetni": "Dünyanın en büyük okyanusu aşağıdakilerden hangisidir?",
+    "secenekA": "Atlas Okyanusu",
+    "secenekB": "Hint Okyanusu",
+    "secenekC": "Arktik Okyanusu",
+    "secenekD": "Pasifik Okyanusu",
+    "dogruCevap": "D"
   }
 ]

@@ -79,6 +79,9 @@ public class PlayerMovement : MonoBehaviour
     // ═══════════════════════════════════════════════════════
     void Update()
     {
+        // YENİ EKLENEN SATIR: Oyun durduğunda karakteri ve inputları dondurur.
+        if (Time.timeScale == 0) return;
+
         if (isDead || isKnockedDown) return;
 
         GroundCheck();
@@ -252,7 +255,7 @@ public class PlayerMovement : MonoBehaviour
         if (isDead || isKnockedDown) return;
         HP = Mathf.Clamp(HP - damage, 0f, maxHP);
         if (HP <= 0f) { Die(); return; }
-        AudioManager.Instance.PlayHurt();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayHurt();
         animator.SetTrigger("IsHit");
     }
 
@@ -268,7 +271,7 @@ public class PlayerMovement : MonoBehaviour
         isDead = true;
         animator.SetBool("IsDead", true);
         controller.enabled = false;
-        AudioManager.Instance.PlayDeath();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDeath();
         Debug.Log("<color=red>OYUNCU ÖLDÜ!</color>");
     }
 
