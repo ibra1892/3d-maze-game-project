@@ -5,7 +5,7 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Text.RegularExpressions; // Noktalama ve boşluk temizleme için eklendi
+using System.Text.RegularExpressions;
 
 [System.Serializable]
 public class SoruData
@@ -167,7 +167,7 @@ public class SoruManager : MonoBehaviour
 
     // --- METİN FİLTRELEME & LEVENSHTEIN SİSTEMİ ---
 
-    // 1. Rafineri Filtresi: Metni küçük harfe çevirir, noktalama ve gereksiz boşlukları temizler
+    // 1. Rafineri Filtresi: Matematik, küme, noktalama ve boşluk temizliğini yapar
     private string MetniTemizle(string metin)
     {
         if (string.IsNullOrEmpty(metin)) return "";
@@ -176,8 +176,20 @@ public class SoruManager : MonoBehaviour
         CultureInfo trKultur = new CultureInfo("tr-TR");
         string temiz = metin.Trim().ToLower(trKultur);
 
-        // Harfler, rakamlar ve tek boşluk dışındaki tüm noktalama işaretlerini sil (Unicode Türkçe harf uyumlu)
-        temiz = Regex.Replace(temiz, @"[^\p{L}\p{Nd}\s]", "");
+        // Küme ve parantez işaretlerini temizle ({, }, [, ], (, ))
+        temiz = Regex.Replace(temiz, @"[\{\}\[\]\(\)]", "");
+
+        // Soru işareti, ünlem, tırnak, iki nokta gibi sembolleri sil (virgül ve noktayı koru)
+        temiz = Regex.Replace(temiz, @"['""!?;:]", "");
+
+        // Cümle sonundaki gereksiz noktaları sil ("ankara." -> "ankara", ama "1.4" bozulmaz)
+        temiz = Regex.Replace(temiz, @"\.(?!\d)", "");
+
+        // Virgül veya nokta çevresindeki boşlukları sil ("2, 3" -> "2,3" veya "1 . 4" -> "1.4")
+        temiz = Regex.Replace(temiz, @"\s*([,\.])\s*", "$1");
+
+        // Sayı içi ondalık standardı: "1.4" yazılsa bile virgüle çevirerek "1,4" ile eşitler
+        temiz = Regex.Replace(temiz, @"(?<=\d)\.(?=\d)", ",");
 
         // Kelime aralarındaki çift/üçlü boşlukları tek boşluğa indir
         temiz = Regex.Replace(temiz, @"\s+", " ");
@@ -192,7 +204,7 @@ public class SoruManager : MonoBehaviour
 
         string temizOyuncu = MetniTemizle(oyuncuMetni);
 
-        // Doğru cevap içindeki olası alternatifleri ayır (örn: "11|on bir|onbir")
+        // Doğru cevap içindeki olası alternatifleri ayır (|)
         string[] alternatifler = dogruMetin.Split('|');
 
         foreach (string alternatif in alternatifler)
@@ -205,12 +217,12 @@ public class SoruManager : MonoBehaviour
             int mesafe = LevenshteinMesafe(temizOyuncu, temizHedef);
             int maxUzunluk = Mathf.Max(temizOyuncu.Length, temizHedef.Length);
 
-            // 3 harf veya daha kısaysa (örn: "Nil") tam eşleşme gerekir
+            // 3 karakter veya daha kısaysa (örn: "Nil", "1,4") tam eşleşme gerekir
             if (maxUzunluk <= 3)
             {
                 if (mesafe == 0) return true;
             }
-            // 4-5 harfli kelimelerde en fazla 1 harf hatasına izin ver
+            // 4-5 karakterli kelimelerde en fazla 1 harf hatasına izin ver
             else if (maxUzunluk <= 5)
             {
                 if (mesafe <= 1) return true;
