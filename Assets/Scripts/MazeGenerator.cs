@@ -154,7 +154,6 @@ public class MazeGenerator : MonoBehaviour
                         {
                             if (Random.Range(0, 100) < mesaleYogunlugu)
                             {
-                                // Etraftaki duvarları kontrol et
                                 bool ustDuvar = (z + 1 < uzunluk) && mazeGrid[x, z + 1] == 1;
                                 bool altDuvar = (z - 1 >= 0) && mazeGrid[x, z - 1] == 1;
                                 bool sagDuvar = (x + 1 < genislik) && mazeGrid[x + 1, z] == 1;
@@ -164,10 +163,9 @@ public class MazeGenerator : MonoBehaviour
                                 Quaternion mesaleYon = Quaternion.identity;
                                 bool duvaraAsildi = false;
 
-                                float yukseklik = 1.8f; // Yerden yüksekliği (göz hizası)
-                                float offset = 0.9f; // Duvara yapışma payı
+                                float yukseklik = 1.8f;
+                                float offset = 0.9f;
 
-                                // Bulunan ilk duvara yapıştır ve yönünü çevir
                                 if (ustDuvar)
                                 {
                                     mesalePos = new Vector3(x * 2f, yukseklik, z * 2f + offset);
@@ -222,10 +220,8 @@ public class MazeGenerator : MonoBehaviour
         yolListesi.Remove(new Vector2Int(genislik - 2, uzunluk - 1));
         yolListesi.Remove(new Vector2Int(genislik - 2, uzunluk - 2));
 
-        if (SoruManager.instance != null)
-        {
-            kapiSayisi = SoruManager.instance.toplamKapiSayisi; 
-        }
+        // Yerleştirilen kapıların DoorController scriptlerini toplayacağımız liste
+        List<DoorController> yerlesenKapilarListesi = new List<DoorController>();
 
         int yerlestirilenKapi = 0;
         int maxDeneme = 2500;
@@ -269,12 +265,44 @@ public class MazeGenerator : MonoBehaviour
                     Quaternion kapiYonu = Quaternion.identity;
                     if (yatayKoridor) kapiYonu = Quaternion.Euler(0, 90, 0);
 
-                    Instantiate(kapiPrefab, kapiPozisyonu, kapiYonu, transform);
+                    GameObject olusanKapi = Instantiate(kapiPrefab, kapiPozisyonu, kapiYonu, transform);
+                    DoorController dc = olusanKapi.GetComponentInChildren<DoorController>();
+                    if (dc != null)
+                    {
+                        yerlesenKapilarListesi.Add(dc);
+                    }
+
                     yerlesenKapilar.Add(kapiPozisyonu);
                     yerlestirilenKapi++;
                 }
                 
                 yolListesi.RemoveAt(rastgeleIndex);
+            }
+        }
+
+        // 🎯 RASTGELE SORU DAĞITIMI
+        // Kaç soru çözülmesi gerekiyorsa o kadar kapıya soru veriyoruz, kalanlar boş kapı oluyor
+        int gerekenSoruSayisi = (SoruManager.instance != null) ? SoruManager.instance.toplamKapiSayisi : yerlesenKapilarListesi.Count;
+
+        // Kapıları rastgele karıştırıyoruz
+        for (int i = 0; i < yerlesenKapilarListesi.Count; i++)
+        {
+            DoorController temp = yerlesenKapilarListesi[i];
+            int rnd = Random.Range(i, yerlesenKapilarListesi.Count);
+            yerlesenKapilarListesi[i] = yerlesenKapilarListesi[rnd];
+            yerlesenKapilarListesi[rnd] = temp;
+        }
+
+        // İlk gerekenSoruSayisi kadar kapı soruları taşır, kalanı boş kapıdır
+        for (int i = 0; i < yerlesenKapilarListesi.Count; i++)
+        {
+            if (i < gerekenSoruSayisi)
+            {
+                yerlesenKapilarListesi[i].soruVarMi = true;
+            }
+            else
+            {
+                yerlesenKapilarListesi[i].soruVarMi = false;
             }
         }
     }

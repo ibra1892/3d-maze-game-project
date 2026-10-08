@@ -4,16 +4,15 @@ using UnityEngine.UI;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text.RegularExpressions; // Noktalama ve boşluk temizleme için eklendi
 
 [System.Serializable]
 public class SoruData
 {
     public string soruMetni;
-    public string secenekA;
-    public string secenekB;
-    public string secenekC;
-    public string secenekD;
     public string dogruCevap;
+    public string ipucu;
 }
 
 public class SoruListesiWrapper
@@ -26,10 +25,10 @@ public class SoruManager : MonoBehaviour
     [Header("UI Elemanları")]
     public GameObject soruPaneli;     
     public TextMeshProUGUI soruText;  
-    public Button[] cevapButonlari;   
+    public TMP_InputField inputCevap;      // Cevap metin kutusu
+    public Button cevaplaButonu;           // Cevapla butonu
     public TextMeshProUGUI kapiSkorText; 
     public Image skorBarFill; 
-    public Color normalButonRengi = Color.white; 
 
     public static SoruManager instance;
     
@@ -38,8 +37,6 @@ public class SoruManager : MonoBehaviour
     private SoruData aktifSoru;
 
     private int acilanKapiSayisi = 0;
-    
-    // 🎯 İŞTE DÜZELTİLEN YER: private yerine public yaptık ki MazeGenerator buraya ulaşabilsin
     public int toplamKapiSayisi = 1; 
     
     private Coroutine barAnimasyonCoroutine; 
@@ -55,6 +52,21 @@ public class SoruManager : MonoBehaviour
         soruPaneli.SetActive(false);
         if (skorBarFill != null) skorBarFill.fillAmount = 0f;
         SkorGuncelleUI(); 
+
+        // Butona tıklandığında cevap kontrolünü çalıştır
+        if (cevaplaButonu != null)
+        {
+            cevaplaButonu.onClick.AddListener(CevapGonder);
+        }
+    }
+
+    void Update()
+    {
+        // Panel açıkken klavyeden Enter'a basılırsa da cevabı gönder
+        if (soruPaneli.activeSelf && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
+        {
+            CevapGonder();
+        }
     }
 
     void JSONDosyasiniOku()
@@ -79,23 +91,15 @@ public class SoruManager : MonoBehaviour
 
         if (tumSorular.Count == 0)
         {
-            // SAYAÇ FRENİ EKLENDİ
             if (acilanKapiSayisi < toplamKapiSayisi)
             {
                 acilanKapiSayisi++; 
                 SkorGuncelleUI();   
             }
             
-            // UNUTULAN SES EFEKTİ EKLENDİ
             if (AudioManager.Instance != null) AudioManager.Instance.PlayDoorOpen();
-            
             kapi.SendMessage("KapıyıAc", SendMessageOptions.DontRequireReceiver);
             return;
-        }
-
-        foreach (Button btn in cevapButonlari)
-        {
-            if (btn != null && btn.image != null) btn.image.color = normalButonRengi; 
         }
 
         suAnkiKapi = kapi; 
@@ -104,7 +108,6 @@ public class SoruManager : MonoBehaviour
         if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperOpen();
 
         Time.timeScale = 0; 
-        // Fareyi görünür ve serbest yapıyoruz
         Cursor.lockState = CursorLockMode.None; 
         Cursor.visible = true;
 
@@ -112,19 +115,25 @@ public class SoruManager : MonoBehaviour
         aktifSoru = tumSorular[rastgeleIndeks];
 
         soruText.text = aktifSoru.soruMetni;
-        cevapButonlari[0].GetComponentInChildren<TextMeshProUGUI>().text = "A) " + aktifSoru.secenekA;
-        cevapButonlari[1].GetComponentInChildren<TextMeshProUGUI>().text = "B) " + aktifSoru.secenekB;
-        cevapButonlari[2].GetComponentInChildren<TextMeshProUGUI>().text = "C) " + aktifSoru.secenekC; 
-        cevapButonlari[3].GetComponentInChildren<TextMeshProUGUI>().text = "D) " + aktifSoru.secenekD;
+
+        // Metin kutusunu sıfırla ve klavyeyi doğrudan kutuya odakla
+        if (inputCevap != null)
+        {
+            inputCevap.text = "";
+            inputCevap.ActivateInputField();
+        }
     }
 
-    public void CevapVer(string secilenSık)
+    public void CevapGonder()
     {
-        if (secilenSık == aktifSoru.dogruCevap)
+        if (inputCevap == null || string.IsNullOrWhiteSpace(inputCevap.text)) return;
+
+        string girilenCevap = inputCevap.text;
+
+        if (CevapDogruMu(girilenCevap, aktifSoru.dogruCevap))
         {
             if (AudioManager.Instance != null) AudioManager.Instance.PlayDoorOpen(); 
 
-            // SAYAÇ FRENİ EKLENDİ
             if (acilanKapiSayisi < toplamKapiSayisi)
             {
                 acilanKapiSayisi++;
@@ -135,7 +144,6 @@ public class SoruManager : MonoBehaviour
             soruPaneli.SetActive(false); 
             Time.timeScale = 1;          
             
-            // Fareyi tekrar kilitliyor ve gizliyoruz
             Cursor.lockState = CursorLockMode.Locked; 
             Cursor.visible = false;
             
@@ -147,18 +155,104 @@ public class SoruManager : MonoBehaviour
             StartCoroutine(SallamaEfekti());
             if (AudioManager.Instance != null) AudioManager.Instance.PlayWrong();
 
-            int tiklananButonIndeksi = -1;
-            if (secilenSık == "A" || secilenSık == "A)" || secilenSık == aktifSoru.secenekA) tiklananButonIndeksi = 0;
-            else if (secilenSık == "B" || secilenSık == "B)" || secilenSık == aktifSoru.secenekB) tiklananButonIndeksi = 1;
-            else if (secilenSık == "C" || secilenSık == "C)" || secilenSık == aktifSoru.secenekC) tiklananButonIndeksi = 2;
-            else if (secilenSık == "D" || secilenSık == "D)" || secilenSık == aktifSoru.secenekD) tiklananButonIndeksi = 3;
-
-            if (tiklananButonIndeksi != -1 && tiklananButonIndeksi < cevapButonlari.Length)
-                cevapButonlari[tiklananButonIndeksi].image.color = new Color(1f, 0.25f, 0.25f, 1f); 
-
-            soruText.text = "<color=red> YANLIŞ CEVAP !</color>\n\n" + aktifSoru.soruMetni;
+            soruText.text = "<color=red>YANLIŞ CEVAP, TEKRAR DENE!</color>\n\n" + aktifSoru.soruMetni;
+            
+            if (inputCevap != null)
+            {
+                inputCevap.text = "";
+                inputCevap.ActivateInputField();
+            }
         }
     }
+
+    // --- METİN FİLTRELEME & LEVENSHTEIN SİSTEMİ ---
+
+    // 1. Rafineri Filtresi: Metni küçük harfe çevirir, noktalama ve gereksiz boşlukları temizler
+    private string MetniTemizle(string metin)
+    {
+        if (string.IsNullOrEmpty(metin)) return "";
+
+        // Türkçe kurallarına göre küçük harfe çevir
+        CultureInfo trKultur = new CultureInfo("tr-TR");
+        string temiz = metin.Trim().ToLower(trKultur);
+
+        // Harfler, rakamlar ve tek boşluk dışındaki tüm noktalama işaretlerini sil (Unicode Türkçe harf uyumlu)
+        temiz = Regex.Replace(temiz, @"[^\p{L}\p{Nd}\s]", "");
+
+        // Kelime aralarındaki çift/üçlü boşlukları tek boşluğa indir
+        temiz = Regex.Replace(temiz, @"\s+", " ");
+
+        return temiz.Trim();
+    }
+
+    // 2. Cevap Doğrulama: Çoklu alternatifleri (|) ve harf hatası toleransını kontrol eder
+    private bool CevapDogruMu(string oyuncuMetni, string dogruMetin)
+    {
+        if (string.IsNullOrEmpty(oyuncuMetni) || string.IsNullOrEmpty(dogruMetin)) return false;
+
+        string temizOyuncu = MetniTemizle(oyuncuMetni);
+
+        // Doğru cevap içindeki olası alternatifleri ayır (örn: "11|on bir|onbir")
+        string[] alternatifler = dogruMetin.Split('|');
+
+        foreach (string alternatif in alternatifler)
+        {
+            string temizHedef = MetniTemizle(alternatif);
+
+            // Filtre sonrası birebir eşitse doğrudan kabul et
+            if (temizOyuncu == temizHedef) return true;
+
+            int mesafe = LevenshteinMesafe(temizOyuncu, temizHedef);
+            int maxUzunluk = Mathf.Max(temizOyuncu.Length, temizHedef.Length);
+
+            // 3 harf veya daha kısaysa (örn: "Nil") tam eşleşme gerekir
+            if (maxUzunluk <= 3)
+            {
+                if (mesafe == 0) return true;
+            }
+            // 4-5 harfli kelimelerde en fazla 1 harf hatasına izin ver
+            else if (maxUzunluk <= 5)
+            {
+                if (mesafe <= 1) return true;
+            }
+            // Daha uzun kelimelerde %75 benzerlik veya en fazla 2 harf hatası kabul et
+            else
+            {
+                float benzerlikOrani = 1.0f - ((float)mesafe / maxUzunluk);
+                if (benzerlikOrani >= 0.75f || mesafe <= 2) return true;
+            }
+        }
+
+        return false;
+    }
+
+    // 3. Karakter işlem mesafesini hesaplayan temel algoritma
+    private int LevenshteinMesafe(string s, string t)
+    {
+        int n = s.Length;
+        int m = t.Length;
+        int[,] d = new int[n + 1, m + 1];
+
+        if (n == 0) return m;
+        if (m == 0) return n;
+
+        for (int i = 0; i <= n; d[i, 0] = i++) { }
+        for (int j = 0; j <= m; d[0, j] = j++) { }
+
+        for (int i = 1; i <= n; i++)
+        {
+            for (int j = 1; j <= m; j++)
+            {
+                int cost = (t[j - 1] == s[i - 1]) ? 0 : 1;
+                d[i, j] = Mathf.Min(
+                    Mathf.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
+                    d[i - 1, j - 1] + cost);
+            }
+        }
+        return d[n, m];
+    }
+
+    // --- UI VE EFEKTLER ---
 
     void SkorGuncelleUI()
     {

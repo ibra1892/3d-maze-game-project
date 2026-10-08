@@ -3,6 +3,10 @@ using UnityEngine;
 public class DoorController : MonoBehaviour
 {
     public bool isOpen = false;
+    
+    [Header("Soru Ayarı")]
+    public bool soruVarMi = false; // Kapıda soru var mı yoksa boş kapı mı?
+
     private bool isPlayerNearby = false;
 
     [Header("Kapı Yukarı Kayma Ayarları")]
@@ -12,11 +16,10 @@ public class DoorController : MonoBehaviour
 
     void Start()
     {
-        // KANKA MANTIĞI DEĞİŞTİRDİK: 
-        // Açıyı değil, kapının durduğu POZİSYONU (Yerel yerini) kaydediyoruz.
+        // Kapının durduğu ilk yerel pozisyonu kaydediyoruz
         startPosition = transform.localPosition;
         
-        // Hedef pozisyon: İlk durduğu yerin 'Y' ekseninde (yukarısında) belirlenen miktar kadar üstü
+        // Hedef pozisyon: Y ekseninde yükselmiş hali
         targetPosition = startPosition + new Vector3(0, yukselmeMiktari, 0);
     }
 
@@ -26,16 +29,26 @@ public class DoorController : MonoBehaviour
         {
             if (!isOpen)
             {
-                SoruManager.instance.SoruSor(gameObject);
+                if (soruVarMi)
+                {
+                    // Sorulu kapı: Parşömen soru ekranını aç
+                    SoruManager.instance.SoruSor(gameObject);
+                }
+                else
+                {
+                    // Boş kapı: Doğrudan aç ve ses efektini çal
+                    if (AudioManager.Instance != null) AudioManager.Instance.PlayDoorOpen();
+                    KapıyıAc();
+                }
             }
         }
 
-        // Kapının yukarı doğru yumuşakça kayma animasyonu (Lerp ile)
+        // Kapının yukarı doğru yumuşakça kayma animasyonu (Lerp)
         Vector3 currentTarget = isOpen ? targetPosition : startPosition;
         transform.localPosition = Vector3.Lerp(transform.localPosition, currentTarget, Time.deltaTime * 5f);
     }
 
-    // Soru doğru bilinince SoruManager burayı tetikler
+    // Soru doğru bilinince veya boş kapı olunca tetiklenir
     public void KapıyıAc()
     {
         isOpen = true;

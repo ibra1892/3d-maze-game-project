@@ -1,82 +1,52 @@
 [
   {
-    "soruMetni": "Türkiye Cumhuriyeti'nin ilk Cumhurbaşkanı kimdir?",
-    "secenekA": "İsmet İnönü",
-    "secenekB": "Celal Bayar",
-    "secenekC": "Mustafa Kemal Atatürk",
-    "secenekD": "Fevzi Çakmak",
-    "dogruCevap": "C"
+    "soruMetni": "Mitolojide Girit labirentinin merkezinde hapsedilen yarı insan yarı boğa canavarın adı nedir?",
+    "dogruCevap": "Minotor|Minotaur|Minotauros",
+    "ipucu": "Labirent efsanelerinin en meşhur mitolojik yaratığıdır."
   },
   {
-    "soruMetni": "İnsan vücudunda kanı tüm vücuda pompalayan organ hangisidir?",
-    "secenekA": "Akciğer",
-    "secenekB": "Karaciğer",
-    "secenekC": "Böbrek",
-    "secenekD": "Kalp",
-    "dogruCevap": "D"
+    "soruMetni": "Game of Thrones evreninde 'Kış Geliyor' (Winter is Coming) sözü hangi hanedana aittir?",
+    "dogruCevap": "Stark|Starklar|Stark Hanedanı",
+    "ipucu": "Kuzeyin koruyucusu olan ve amblemi ulukurt olan aile."
   },
   {
-    "soruMetni": "Güneş sisteminin en büyük gezegeni hangisidir?",
-    "secenekA": "Jüpiter",
-    "secenekB": "Satürn",
-    "secenekC": "Neptün",
-    "secenekD": "Dünya",
-    "dogruCevap": "A"
+    "soruMetni": "Kızıl Gezegen olarak bilinen ve Güneş Sistemi'nde Güneş'e en yakın 4. gezegen hangisidir?",
+    "dogruCevap": "Mars",
+    "ipucu": "Üzerinde Güneş Sistemi'nin en yüksek dağı olan Olympus Mons bulunur."
   },
   {
-    "soruMetni": "Matbaayı icat ederek bilginin yayılmasında çığır açan kişi kimdir?",
-    "secenekA": "Leonardo da Vinci",
-    "secenekB": "Johannes Gutenberg",
-    "secenekC": "Galileo Galilei",
-    "secenekD": "Isaac Newton",
-    "dogruCevap": "B"
+    "soruMetni": "Futbolda Ballon d'Or ödülünü 8 kez kazanarak rekor kıran Arjantinli futbolcu kimdir?",
+    "dogruCevap": "Lionel Messi|Messi|Leo Messi",
+    "ipucu": "2022 Dünya Kupası şampiyonu kaptan."
   },
   {
-    "soruMetni": "Periyodik tabloda simgesi 'Au' olan element aşağıdakilerden hangisidir?",
-    "secenekA": "Gümüş",
-    "secenekB": "Alüminyum",
-    "secenekC": "Altın",
-    "secenekD": "Argon",
-    "dogruCevap": "C"
+    "soruMetni": "Marvel evreninde 'Büyük güç büyük sorumluluk getirir' sözüyle özdeşleşen kahraman kimdir?",
+    "dogruCevap": "Spider-Man|Spiderman|Örümcek Adam",
+    "ipucu": "Peter Parker'ın süper kahraman kimliği."
   },
   {
-    "soruMetni": "Dünyanın en uzun nehirlerinden biri olan ve Mısır'ın can damarı sayılan nehir hangisidir?",
-    "secenekA": "Amazon",
-    "secenekB": "Tuna",
-    "secenekC": "Nil",
-    "secenekD": "Fırat",
-    "dogruCevap": "C"
+    "soruMetni": "Web sitelerinin iskeletini ve temel yapısını kurmak için kullanılan işaretleme dili hangisidir?",
+    "dogruCevap": "HTML|Html",
+    "ipucu": "HyperText Markup Language ifadesinin kısaltmasıdır."
   },
   {
-    "soruMetni": "İstanbul'u 1453 yılında fetheden Osmanlı padişahı kimdir?",
-    "secenekA": "Yavuz Sultan Selim",
-    "secenekB": "Kanuni Sultan Süleyman",
-    "secenekC": "II. Murat",
-    "secenekD": "Fatih Sultan Mehmet",
-    "dogruCevap": "D"
+    "soruMetni": "İngiltere Premier Lig'de 'You'll Never Walk Alone' marşıyla bilinen Kırmızılar lakaplı kulüp hangisidir?",
+    "dogruCevap": "Liverpool|Liverpool FC",
+    "ipucu": "Maçlarını efsanevi Anfield Stadyumu'nda oynar."
   },
   {
-    "soruMetni": "Bitkilerin güneş ışığını kullanarak besin üretmesine ne ad verilir?",
-    "secenekA": "Solunum",
-    "secenekB": "Fotosentez",
-    "secenekC": "Sindirim",
-    "secenekD": "Terleme",
-    "dogruCevap": "B"
+    "soruMetni": "'Lose Yourself' şarkısıyla rap dalında Oscar ödülü kazanan dünyaca ünlü sanatçı kimdir?",
+    "dogruCevap": "Eminem|Slim Shady|Marshall Mathers",
+    "ipucu": "8 Mile filminin başrol oyuncusu."
   },
   {
-    "soruMetni": "Bir futbol maçında sahada her takımdan kaç oyuncu bulunur?",
-    "secenekA": "9",
-    "secenekB": "10",
-    "secenekC": "11",
-    "secenekD": "12",
-    "dogruCevap": "C"
+    "soruMetni": "Geceleri yön bulmak için kullanılan ve gökyüzünde daima kuzeyi gösteren yıldız hangisidir?",
+    "dogruCevap": "Kutup Yıldızı|Kutupyıldızı|Kuzey Yıldızı|Demirkazık",
+    "ipucu": "Küçükayı takımyıldızının en parlak üyesidir."
   },
   {
-    "soruMetni": "Dünyanın en büyük okyanusu aşağıdakilerden hangisidir?",
-    "secenekA": "Atlas Okyanusu",
-    "secenekB": "Hint Okyanusu",
-    "secenekC": "Arktik Okyanusu",
-    "secenekD": "Pasifik Okyanusu",
-    "dogruCevap": "D"
+    "soruMetni": "Bilgisayar oyunlarında haritanın dışına çıkmayı veya görünmez engelleri aşmayı sağlayan hile moduna ne ad verilir?",
+    "dogruCevap": "Noclip|No clip",
+    "ipucu": "Duvarların içinden geçme yeteneği veren komut."
   }
 ]
