@@ -12,7 +12,6 @@ public class MazeGenerator : MonoBehaviour
     public GameObject wallPrefab;
     public GameObject floorPrefab;
     public GameObject kapiPrefab; 
-    // ---> YENİ: MEŞALE PREFABI EKLENDİ <---
     public GameObject mesalePrefab; 
     
     [Header("Özel Objeler")]
@@ -21,7 +20,6 @@ public class MazeGenerator : MonoBehaviour
     [Header("Ayarlar")]
     public int kapiSayisi = 20; 
     public float kapiMesafeSiniri = 8f; 
-    // ---> YENİ: MEŞALE YOĞUNLUĞU (%10 İHTİMAL) <---
     [Range(0, 100)]
     public int mesaleYogunlugu = 10; 
 
@@ -149,18 +147,56 @@ public class MazeGenerator : MonoBehaviour
                     Vector3 zeminPozisyonu = new Vector3(x * 2f, 0, z * 2f);
                     Instantiate(floorPrefab, zeminPozisyonu, Quaternion.identity, transform);
 
-                    // ---> OTOMATİK MEŞALE YERLEŞTİRİCİ <---
-                    // Boş yollara (zemine) duvarın içine girmemesi için meşale yerleştiriyoruz.
+                    // ---> AKILLI DUVAR MEŞALESİ SİSTEMİ <---
                     if (mesalePrefab != null)
                     {
-                        // Başlangıç ve çıkış kapısına çok dip dibe koymamak için minik güvenlik
                         if ((x > 1 || z > 1) && (x < genislik - 2 || z < uzunluk - 2)) 
                         {
                             if (Random.Range(0, 100) < mesaleYogunlugu)
                             {
-                                // Yüksekliği 1f yaptık ki meşale tam yerde kalmasın, göz hizasına gelsin
-                                Vector3 mesalePozisyonu = new Vector3(x * 2f, 1f, z * 2f); 
-                                Instantiate(mesalePrefab, mesalePozisyonu, Quaternion.identity, transform);
+                                // Etraftaki duvarları kontrol et
+                                bool ustDuvar = (z + 1 < uzunluk) && mazeGrid[x, z + 1] == 1;
+                                bool altDuvar = (z - 1 >= 0) && mazeGrid[x, z - 1] == 1;
+                                bool sagDuvar = (x + 1 < genislik) && mazeGrid[x + 1, z] == 1;
+                                bool solDuvar = (x - 1 >= 0) && mazeGrid[x - 1, z] == 1;
+
+                                Vector3 mesalePos = Vector3.zero;
+                                Quaternion mesaleYon = Quaternion.identity;
+                                bool duvaraAsildi = false;
+
+                                float yukseklik = 1.8f; // Yerden yüksekliği (göz hizası)
+                                float offset = 0.9f; // Duvara yapışma payı
+
+                                // Bulunan ilk duvara yapıştır ve yönünü çevir
+                                if (ustDuvar)
+                                {
+                                    mesalePos = new Vector3(x * 2f, yukseklik, z * 2f + offset);
+                                    mesaleYon = Quaternion.Euler(0, 0, 0); 
+                                    duvaraAsildi = true;
+                                }
+                                else if (altDuvar)
+                                {
+                                    mesalePos = new Vector3(x * 2f, yukseklik, z * 2f - offset);
+                                    mesaleYon = Quaternion.Euler(0, 180, 0);
+                                    duvaraAsildi = true;
+                                }
+                                else if (sagDuvar)
+                                {
+                                    mesalePos = new Vector3(x * 2f + offset, yukseklik, z * 2f);
+                                    mesaleYon = Quaternion.Euler(0, 90, 0);
+                                    duvaraAsildi = true;
+                                }
+                                else if (solDuvar)
+                                {
+                                    mesalePos = new Vector3(x * 2f - offset, yukseklik, z * 2f);
+                                    mesaleYon = Quaternion.Euler(0, -90, 0);
+                                    duvaraAsildi = true;
+                                }
+
+                                if (duvaraAsildi)
+                                {
+                                    Instantiate(mesalePrefab, mesalePos, mesaleYon, transform);
+                                }
                             }
                         }
                     }
