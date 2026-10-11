@@ -1,112 +1,115 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using TMPro;
 using System.Collections;
 
 public class Exit_Door_Controller : MonoBehaviour
 {
-    private Transform oyuncu;
-    private bool kapiAciliyorMu = false;
-    private Vector3 baslangicPozisyonu;
-    private Vector3 hedefPozisyonu;
+    private Transform player;
+    private bool isOpening = false;
+    private Vector3 startPosition;
+    private Vector3 targetPosition;
 
-    [Header("Kapı Hareket Ayarları")]
-    public float yukselmeMiktari = 8f; 
-    public float acilmaHizi = 2.5f;     
+    // [FormerlySerializedAs] keeps the values you already set in the Inspector
+    // after the fields were renamed from Turkish to English.
+    [Header("Door Movement")]
+    [FormerlySerializedAs("yukselmeMiktari")] public float riseAmount = 8f;
+    [FormerlySerializedAs("acilmaHizi")] public float openSpeed = 2.5f;
 
-    [Header("UI Ayarları")]
-    public GameObject mesajPaneli; 
-    private TextMeshProUGUI mesajText; 
+    [Header("UI")]
+    [FormerlySerializedAs("mesajPaneli")] public GameObject messagePanel;
+    private TextMeshProUGUI messageText;
 
-    [Header("Mesafe Ayarı")]
-    public float algilamaMesafesi = 5f; 
+    [Header("Distance")]
+    [FormerlySerializedAs("algilamaMesafesi")] public float detectionDistance = 5f;
 
     void Start()
     {
-        baslangicPozisyonu = transform.position;
-        hedefPozisyonu = baslangicPozisyonu + Vector3.up * yukselmeMiktari;
+        startPosition = transform.position;
+        targetPosition = startPosition + Vector3.up * riseAmount;
 
-        // 🎯 2. SORUNUN ÇÖZÜMÜ: Panel koptuysa oyuna girince Canvas'ı arayıp otomatik bulur
-        if (mesajPaneli == null)
+        // If the panel reference is lost, look for it under the Canvas when the game starts
+        if (messagePanel == null)
         {
             GameObject canvas = GameObject.Find("Canvas");
             if (canvas != null)
             {
                 Transform panel = canvas.transform.Find("ExitMessagePanel");
-                if (panel != null) mesajPaneli = panel.gameObject;
+                if (panel != null) messagePanel = panel.gameObject;
             }
         }
 
-        // Bulduğu paneli gizler ve yazı bileşenini alır
-        if (mesajPaneli != null)
+        // Hide the panel and grab its text component
+        if (messagePanel != null)
         {
-            mesajText = mesajPaneli.GetComponentInChildren<TextMeshProUGUI>();
-            mesajPaneli.SetActive(false); 
+            messageText = messagePanel.GetComponentInChildren<TextMeshProUGUI>();
+            messagePanel.SetActive(false);
         }
 
-        GameObject playerObj = GameObject.FindWithTag("Player");
-        if (playerObj != null) oyuncu = playerObj.transform;
+        GameObject playerObject = GameObject.FindWithTag("Player");
+        if (playerObject != null) player = playerObject.transform;
     }
 
     void Update()
     {
-        if (oyuncu == null) return;
+        if (player == null) return;
 
-        if (kapiAciliyorMu)
+        if (isOpening)
         {
-            // Zaman durduğunda bile kapının animasyonu devam etsin
-            transform.position = Vector3.MoveTowards(transform.position, hedefPozisyonu, acilmaHizi * Time.unscaledDeltaTime);
+            // Keep the door animation running even when time is paused
+            transform.position = Vector3.MoveTowards(transform.position, targetPosition, openSpeed * Time.unscaledDeltaTime);
             return;
         }
 
-        float mesafe = Vector3.Distance(transform.position, oyuncu.position);
+        float distance = Vector3.Distance(transform.position, player.position);
 
-        if (mesafe <= algilamaMesafesi && Input.GetKeyDown(KeyCode.E))
+        if (distance <= detectionDistance && Input.GetKeyDown(KeyCode.E))
         {
-            CikisKontrolEt();
+            TryExit();
         }
     }
 
-    void CikisKontrolEt()
+    void TryExit()
     {
-        if (mesajText != null)
+        if (messageText != null)
         {
-            if (SoruManager.instance != null && SoruManager.instance.TumSorularCozulduMu())
+            if (QuestionManager.instance != null && QuestionManager.instance.AreAllQuestionsSolved())
             {
-                kapiAciliyorMu = true;
-                
-                string basariMesaji = "<b><size=140%><color=#145A32>TEBRIKLER!</color></size></b>\n\n" +
-                                      "<size=95%><color=#2C1A0C>Labirentten basariyla ciktiniz.</color></size>";
-                
-                mesajText.text = basariMesaji;
-                mesajPaneli.SetActive(true);
-                
-                Collider col = GetComponent<Collider>();
-                if (col != null) col.enabled = false;
+                isOpening = true;
+
+                string successMessage = "<b><size=140%><color=#145A32>CONGRATULATIONS!</color></size></b>\n\n" +
+                                        "<size=95%><color=#2C1A0C>You escaped the maze.</color></size>";
+
+                messageText.text = successMessage;
+                messagePanel.SetActive(true);
+
+                Collider doorCollider = GetComponent<Collider>();
+                if (doorCollider != null) doorCollider.enabled = false;
 
                 if (AudioManager.Instance != null) AudioManager.Instance.PlayDoorOpen();
-                
-                Time.timeScale = 0; 
+
+                Time.timeScale = 0;
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
             else
             {
-                string uyariMesaji = "<b><size=140%><color=#800000>KAPI KILITLI</color></size></b>\n\n" +
-                                     "<size=95%><color=#2C1A0C>Labirentteki tum sorulari cozmeden buradan çikamazsin.</color></size>";
-                
-                StartCoroutine(UyariGoster(uyariMesaji));
+                string warningMessage = "<b><size=140%><color=#800000>DOOR LOCKED</color></size></b>\n\n" +
+                                        "<size=95%><color=#2C1A0C>You can't leave until you solve all the questions in the maze.</color></size>";
+
+                StartCoroutine(ShowWarning(warningMessage));
             }
         }
     }
 
-    IEnumerator UyariGoster(string mesaj)
+    IEnumerator ShowWarning(string message)
     {
-        if (mesajPaneli != null && mesajText != null)
+        if (messagePanel != null && messageText != null)
         {
-            mesajText.text = mesaj;
-            mesajPaneli.SetActive(true); 
+            messageText.text = message;
+            messagePanel.SetActive(true);
             yield return new WaitForSeconds(3.5f);
-            mesajPaneli.SetActive(false); 
+            messagePanel.SetActive(false);
         }
     }
 }

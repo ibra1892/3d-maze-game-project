@@ -294,7 +294,7 @@ GameObject:
   - component: {fileID: 14572368}
   - component: {fileID: 14572367}
   m_Layer: 0
-  m_Name: SoruManager
+  m_Name: QuestionManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -312,13 +312,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adb6141a16d72214da7de0818601535c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SoruManager
-  soruPaneli: {fileID: 1099905956}
-  soruText: {fileID: 1003967442}
-  inputCevap: {fileID: 596835480}
-  cevaplaButonu: {fileID: 1081380298}
-  kapiSkorText: {fileID: 1873822635}
-  skorBarFill: {fileID: 1987999185}
-  toplamKapiSayisi: 1
+  questionPanel: {fileID: 1099905956}
+  questionText: {fileID: 1003967442}
+  answerInput: {fileID: 596835480}
+  submitButton: {fileID: 1081380298}
+  doorScoreText: {fileID: 1873822635}
+  scoreBarFill: {fileID: 1987999185}
+  serverUrl: http://localhost:5000
+  autoJoinRoomCode: 
 --- !u!4 &14572368
 Transform:
   m_ObjectHideFlags: 0
@@ -8123,16 +8124,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b09934eba44201d47b93dd241fa53b94, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MazeGenerator
-  genislik: 20
-  uzunluk: 20
+  width: 20
+  length: 20
   wallPrefab: {fileID: 6177955216275237941, guid: 8dff56d2b65688c41900dba205ec1f89, type: 3}
   floorPrefab: {fileID: 404681588854098763, guid: f9c4f6157fd5bbf44ac9aed14ed6d31c, type: 3}
-  kapiPrefab: {fileID: 8631691907161228608, guid: 9aecdcc11aeecdc4a98a322400244744, type: 3}
-  mesalePrefab: {fileID: 4327990116413142176, guid: 9307100db9d791c47b4be5c728e6137d, type: 3}
-  cikisKapisiPrefab: {fileID: 8631691907161228608, guid: b8f533d8864eef54eb8993bc41431049, type: 3}
-  kapiSayisi: 20
-  kapiMesafeSiniri: 6
-  mesaleYogunlugu: 41
+  doorPrefab: {fileID: 8631691907161228608, guid: 9aecdcc11aeecdc4a98a322400244744, type: 3}
+  torchPrefab: {fileID: 4327990116413142176, guid: 9307100db9d791c47b4be5c728e6137d, type: 3}
+  exitDoorPrefab: {fileID: 8631691907161228608, guid: b8f533d8864eef54eb8993bc41431049, type: 3}
+  doorCount: 20
+  minDoorDistance: 6
+  torchDensity: 41
 --- !u!1 &891207655
 GameObject:
   m_ObjectHideFlags: 0

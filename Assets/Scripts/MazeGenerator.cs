@@ -1,199 +1,227 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class MazeGenerator : MonoBehaviour
 {
-    [Header("Labirent Boyutlari")]
-    public int genislik = 25; 
-    public int uzunluk = 25;
+    // [FormerlySerializedAs] keeps the values you already set in the Inspector
+    // after the fields were renamed from Turkish to English.
+    [Header("Maze Size")]
+    [FormerlySerializedAs("genislik")] public int width = 25;
+    [FormerlySerializedAs("uzunluk")] public int length = 25;
 
-    [Header("Prefablar")]
+    [Header("Prefabs")]
     public GameObject wallPrefab;
     public GameObject floorPrefab;
-    public GameObject kapiPrefab; 
-    public GameObject mesalePrefab; 
-    
-    [Header("Özel Objeler")]
-    public GameObject cikisKapisiPrefab; 
+    [FormerlySerializedAs("kapiPrefab")] public GameObject doorPrefab;
+    [FormerlySerializedAs("mesalePrefab")] public GameObject torchPrefab;
 
-    [Header("Ayarlar")]
-    public int kapiSayisi = 20; 
-    public float kapiMesafeSiniri = 8f; 
+    [Header("Special Objects")]
+    [FormerlySerializedAs("cikisKapisiPrefab")] public GameObject exitDoorPrefab;
+
+    [Header("Settings")]
+    [FormerlySerializedAs("kapiSayisi")] public int doorCount = 20;
+    [FormerlySerializedAs("kapiMesafeSiniri")] public float minDoorDistance = 8f;
+    [FormerlySerializedAs("mesaleYogunlugu")]
     [Range(0, 100)]
-    public int mesaleYogunlugu = 10; 
+    public int torchDensity = 10;
 
     private int[,] mazeGrid;
-    private List<Vector2Int> yolListesi = new List<Vector2Int>(); 
+    private readonly List<Vector2Int> pathCells = new List<Vector2Int>();
 
     void Start()
     {
-        if (genislik % 2 == 0) genislik++;
-        if (uzunluk % 2 == 0) uzunluk++;
+        StartCoroutine(GenerateWhenRoomIsReady());
+    }
 
-        mazeGrid = new int[genislik, uzunluk];
-        
-        for (int x = 0; x < genislik; x++)
+    // The number of questions comes from the server, so the maze is built only after
+    // the student has joined a room. Without a QuestionManager it is built right away.
+    private IEnumerator GenerateWhenRoomIsReady()
+    {
+        while (QuestionManager.instance != null && !QuestionManager.instance.IsRoomReady)
         {
-            for (int z = 0; z < uzunluk; z++)
+            yield return null;
+        }
+
+        GenerateMaze();
+    }
+
+    private void GenerateMaze()
+    {
+        if (width % 2 == 0) width++;
+        if (length % 2 == 0) length++;
+
+        mazeGrid = new int[width, length];
+
+        // 1 = wall, 0 = path
+        for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < length; z++)
             {
-                mazeGrid[x, z] = 1; 
+                mazeGrid[x, z] = 1;
             }
         }
 
-        KostebekKazisi(1, 1);
+        CarveMaze(1, 1);
 
-        mazeGrid[1, 0] = 0; 
-        mazeGrid[genislik - 2, uzunluk - 1] = 0; 
+        // Entrance and exit openings
+        mazeGrid[1, 0] = 0;
+        mazeGrid[width - 2, length - 1] = 0;
 
-        EkstraYollarAc();
+        OpenExtraPaths();
 
-        LabirentiSahneyeCiz();
-        
-        CikisKapisiniYerlestir(); 
-        
-        KapilariYerlestir(); 
+        BuildMaze();
+
+        PlaceExitDoor();
+
+        PlaceDoors();
     }
 
-    void KostebekKazisi(int startX, int startZ)
+    // Recursive backtracker: carves a path through the grid, two cells at a time.
+    private void CarveMaze(int startX, int startZ)
     {
         mazeGrid[startX, startZ] = 0;
-        yolListesi.Add(new Vector2Int(startX, startZ));
+        pathCells.Add(new Vector2Int(startX, startZ));
 
-        int[] yonX = { 0, 0, 2, -2 };
-        int[] yonZ = { 2, -2, 0, 0 };
-        
-        List<int> yonSirasi = new List<int> { 0, 1, 2, 3 };
-        for (int i = 0; i < yonSirasi.Count; i++)
+        int[] directionX = { 0, 0, 2, -2 };
+        int[] directionZ = { 2, -2, 0, 0 };
+
+        // Shuffle the order of the four directions
+        List<int> directionOrder = new List<int> { 0, 1, 2, 3 };
+        for (int i = 0; i < directionOrder.Count; i++)
         {
-            int temp = yonSirasi[i];
-            int randomIndex = Random.Range(i, yonSirasi.Count);
-            yonSirasi[i] = yonSirasi[randomIndex];
-            yonSirasi[randomIndex] = temp;
+            int temp = directionOrder[i];
+            int randomIndex = Random.Range(i, directionOrder.Count);
+            directionOrder[i] = directionOrder[randomIndex];
+            directionOrder[randomIndex] = temp;
         }
 
-        foreach (int i in yonSirasi)
+        foreach (int i in directionOrder)
         {
-            int yeniX = startX + yonX[i];
-            int yeniZ = startZ + yonZ[i];
+            int newX = startX + directionX[i];
+            int newZ = startZ + directionZ[i];
 
-            if (yeniX > 0 && yeniX < genislik - 1 && yeniZ > 0 && yeniZ < uzunluk - 1 && mazeGrid[yeniX, yeniZ] == 1)
+            if (newX > 0 && newX < width - 1 && newZ > 0 && newZ < length - 1 && mazeGrid[newX, newZ] == 1)
             {
-                mazeGrid[startX + yonX[i] / 2, startZ + yonZ[i] / 2] = 0;
-                yolListesi.Add(new Vector2Int(startX + yonX[i] / 2, startZ + yonZ[i] / 2));
-                KostebekKazisi(yeniX, yeniZ);
+                mazeGrid[startX + directionX[i] / 2, startZ + directionZ[i] / 2] = 0;
+                pathCells.Add(new Vector2Int(startX + directionX[i] / 2, startZ + directionZ[i] / 2));
+                CarveMaze(newX, newZ);
             }
         }
     }
 
-    void EkstraYollarAc()
+    // Knocks out some walls so the maze has loops and more than one route.
+    private void OpenExtraPaths()
     {
-        int kirilacakSayi = (genislik * uzunluk) / 30; 
-        int kirilan = 0;
-        int maxDeneme = 5000;
+        int wallsToRemove = (width * length) / 30;
+        int removed = 0;
+        int attemptsLeft = 5000;
 
-        while (kirilan < kirilacakSayi && maxDeneme > 0)
+        while (removed < wallsToRemove && attemptsLeft > 0)
         {
-            maxDeneme--;
-            int x = Random.Range(1, genislik - 1);
-            int z = Random.Range(1, uzunluk - 1);
+            attemptsLeft--;
+            int x = Random.Range(1, width - 1);
+            int z = Random.Range(1, length - 1);
 
             if (mazeGrid[x, z] == 1)
             {
-                bool ustYol = mazeGrid[x, z + 1] == 0;
-                bool altYol = mazeGrid[x, z - 1] == 0;
-                bool sagYol = mazeGrid[x + 1, z] == 0;
-                bool solYol = mazeGrid[x - 1, z] == 0;
+                bool pathAbove = mazeGrid[x, z + 1] == 0;
+                bool pathBelow = mazeGrid[x, z - 1] == 0;
+                bool pathRight = mazeGrid[x + 1, z] == 0;
+                bool pathLeft = mazeGrid[x - 1, z] == 0;
 
-                bool yatayBaglanti = solYol && sagYol && !ustYol && !altYol;
-                bool dikeyBaglanti = ustYol && altYol && !solYol && !sagYol;
+                bool horizontalConnection = pathLeft && pathRight && !pathAbove && !pathBelow;
+                bool verticalConnection = pathAbove && pathBelow && !pathLeft && !pathRight;
 
-                if (yatayBaglanti || dikeyBaglanti)
+                if (horizontalConnection || verticalConnection)
                 {
-                    if (!BoslukYaratirMi(x, z))
+                    if (!CreatesOpenArea(x, z))
                     {
-                        mazeGrid[x, z] = 0; 
-                        yolListesi.Add(new Vector2Int(x, z));
-                        kirilan++;
+                        mazeGrid[x, z] = 0;
+                        pathCells.Add(new Vector2Int(x, z));
+                        removed++;
                     }
                 }
             }
         }
     }
 
-    bool BoslukYaratirMi(int x, int z)
+    // True if opening this cell would create a 2x2 block of open floor.
+    private bool CreatesOpenArea(int x, int z)
     {
-        if (mazeGrid[x - 1, z] == 0 && mazeGrid[x, z - 1] == 0 && mazeGrid[x - 1, z - 1] == 0) return true; 
-        if (mazeGrid[x + 1, z] == 0 && mazeGrid[x, z - 1] == 0 && mazeGrid[x + 1, z - 1] == 0) return true; 
-        if (mazeGrid[x - 1, z] == 0 && mazeGrid[x, z + 1] == 0 && mazeGrid[x - 1, z + 1] == 0) return true; 
-        if (mazeGrid[x + 1, z] == 0 && mazeGrid[x, z + 1] == 0 && mazeGrid[x + 1, z + 1] == 0) return true; 
-        
+        if (mazeGrid[x - 1, z] == 0 && mazeGrid[x, z - 1] == 0 && mazeGrid[x - 1, z - 1] == 0) return true;
+        if (mazeGrid[x + 1, z] == 0 && mazeGrid[x, z - 1] == 0 && mazeGrid[x + 1, z - 1] == 0) return true;
+        if (mazeGrid[x - 1, z] == 0 && mazeGrid[x, z + 1] == 0 && mazeGrid[x - 1, z + 1] == 0) return true;
+        if (mazeGrid[x + 1, z] == 0 && mazeGrid[x, z + 1] == 0 && mazeGrid[x + 1, z + 1] == 0) return true;
+
         return false;
     }
 
-    void LabirentiSahneyeCiz()
+    private void BuildMaze()
     {
-        for (int x = 0; x < genislik; x++)
+        for (int x = 0; x < width; x++)
         {
-            for (int z = 0; z < uzunluk; z++)
+            for (int z = 0; z < length; z++)
             {
                 if (mazeGrid[x, z] == 1)
                 {
-                    Vector3 duvarPozisyonu = new Vector3(x * 2f, 2f, z * 2f);
-                    Instantiate(wallPrefab, duvarPozisyonu, Quaternion.identity, transform);
+                    Vector3 wallPosition = new Vector3(x * 2f, 2f, z * 2f);
+                    Instantiate(wallPrefab, wallPosition, Quaternion.identity, transform);
                 }
                 else
                 {
-                    Vector3 zeminPozisyonu = new Vector3(x * 2f, 0, z * 2f);
-                    Instantiate(floorPrefab, zeminPozisyonu, Quaternion.identity, transform);
+                    Vector3 floorPosition = new Vector3(x * 2f, 0, z * 2f);
+                    Instantiate(floorPrefab, floorPosition, Quaternion.identity, transform);
 
-                    // ---> AKILLI DUVAR MEŞALESİ SİSTEMİ <---
-                    if (mesalePrefab != null)
+                    // --- SMART WALL TORCH SYSTEM ---
+                    if (torchPrefab != null)
                     {
-                        if ((x > 1 || z > 1) && (x < genislik - 2 || z < uzunluk - 2)) 
+                        // Skip the entrance and exit areas
+                        if ((x > 1 || z > 1) && (x < width - 2 || z < length - 2))
                         {
-                            if (Random.Range(0, 100) < mesaleYogunlugu)
+                            if (Random.Range(0, 100) < torchDensity)
                             {
-                                bool ustDuvar = (z + 1 < uzunluk) && mazeGrid[x, z + 1] == 1;
-                                bool altDuvar = (z - 1 >= 0) && mazeGrid[x, z - 1] == 1;
-                                bool sagDuvar = (x + 1 < genislik) && mazeGrid[x + 1, z] == 1;
-                                bool solDuvar = (x - 1 >= 0) && mazeGrid[x - 1, z] == 1;
+                                bool wallAbove = (z + 1 < length) && mazeGrid[x, z + 1] == 1;
+                                bool wallBelow = (z - 1 >= 0) && mazeGrid[x, z - 1] == 1;
+                                bool wallRight = (x + 1 < width) && mazeGrid[x + 1, z] == 1;
+                                bool wallLeft = (x - 1 >= 0) && mazeGrid[x - 1, z] == 1;
 
-                                Vector3 mesalePos = Vector3.zero;
-                                Quaternion mesaleYon = Quaternion.identity;
-                                bool duvaraAsildi = false;
+                                Vector3 torchPosition = Vector3.zero;
+                                Quaternion torchRotation = Quaternion.identity;
+                                bool attachedToWall = false;
 
-                                float yukseklik = 1.8f;
+                                float height = 1.8f;
                                 float offset = 0.9f;
 
-                                if (ustDuvar)
+                                if (wallAbove)
                                 {
-                                    mesalePos = new Vector3(x * 2f, yukseklik, z * 2f + offset);
-                                    mesaleYon = Quaternion.Euler(0, 0, 0); 
-                                    duvaraAsildi = true;
+                                    torchPosition = new Vector3(x * 2f, height, z * 2f + offset);
+                                    torchRotation = Quaternion.Euler(0, 0, 0);
+                                    attachedToWall = true;
                                 }
-                                else if (altDuvar)
+                                else if (wallBelow)
                                 {
-                                    mesalePos = new Vector3(x * 2f, yukseklik, z * 2f - offset);
-                                    mesaleYon = Quaternion.Euler(0, 180, 0);
-                                    duvaraAsildi = true;
+                                    torchPosition = new Vector3(x * 2f, height, z * 2f - offset);
+                                    torchRotation = Quaternion.Euler(0, 180, 0);
+                                    attachedToWall = true;
                                 }
-                                else if (sagDuvar)
+                                else if (wallRight)
                                 {
-                                    mesalePos = new Vector3(x * 2f + offset, yukseklik, z * 2f);
-                                    mesaleYon = Quaternion.Euler(0, 90, 0);
-                                    duvaraAsildi = true;
+                                    torchPosition = new Vector3(x * 2f + offset, height, z * 2f);
+                                    torchRotation = Quaternion.Euler(0, 90, 0);
+                                    attachedToWall = true;
                                 }
-                                else if (solDuvar)
+                                else if (wallLeft)
                                 {
-                                    mesalePos = new Vector3(x * 2f - offset, yukseklik, z * 2f);
-                                    mesaleYon = Quaternion.Euler(0, -90, 0);
-                                    duvaraAsildi = true;
+                                    torchPosition = new Vector3(x * 2f - offset, height, z * 2f);
+                                    torchRotation = Quaternion.Euler(0, -90, 0);
+                                    attachedToWall = true;
                                 }
 
-                                if (duvaraAsildi)
+                                if (attachedToWall)
                                 {
-                                    Instantiate(mesalePrefab, mesalePos, mesaleYon, transform);
+                                    Instantiate(torchPrefab, torchPosition, torchRotation, transform);
                                 }
                             }
                         }
@@ -203,107 +231,104 @@ public class MazeGenerator : MonoBehaviour
         }
     }
 
-    void CikisKapisiniYerlestir()
+    private void PlaceExitDoor()
     {
-        if (cikisKapisiPrefab != null)
+        if (exitDoorPrefab != null)
         {
-            Vector3 cikisPozisyonu = new Vector3((genislik - 2) * 2f, 0, (uzunluk - 1) * 2f);
-            Quaternion kapiYonu = Quaternion.Euler(0, 0, 0); 
-            Instantiate(cikisKapisiPrefab, cikisPozisyonu, kapiYonu, transform);
+            Vector3 exitPosition = new Vector3((width - 2) * 2f, 0, (length - 1) * 2f);
+            Quaternion exitRotation = Quaternion.Euler(0, 0, 0);
+            Instantiate(exitDoorPrefab, exitPosition, exitRotation, transform);
         }
     }
 
-    void KapilariYerlestir()
+    private void PlaceDoors()
     {
-        yolListesi.Remove(new Vector2Int(1, 1));
-        yolListesi.Remove(new Vector2Int(1, 0));
-        yolListesi.Remove(new Vector2Int(genislik - 2, uzunluk - 1));
-        yolListesi.Remove(new Vector2Int(genislik - 2, uzunluk - 2));
+        // Keep the entrance and exit cells free of doors
+        pathCells.Remove(new Vector2Int(1, 1));
+        pathCells.Remove(new Vector2Int(1, 0));
+        pathCells.Remove(new Vector2Int(width - 2, length - 1));
+        pathCells.Remove(new Vector2Int(width - 2, length - 2));
 
-        // Yerleştirilen kapıların DoorController scriptlerini toplayacağımız liste
-        List<DoorController> yerlesenKapilarListesi = new List<DoorController>();
+        // DoorController scripts of the doors we place, used later to hand out questions
+        List<DoorController> placedDoorControllers = new List<DoorController>();
 
-        int yerlestirilenKapi = 0;
-        int maxDeneme = 2500;
-        
-        List<Vector3> yerlesenKapilar = new List<Vector3>();
-        
-        while (yerlestirilenKapi < kapiSayisi && yolListesi.Count > 0 && maxDeneme > 0)
+        int placedDoorCount = 0;
+        int attemptsLeft = 2500;
+
+        List<Vector3> placedDoorPositions = new List<Vector3>();
+
+        while (placedDoorCount < doorCount && pathCells.Count > 0 && attemptsLeft > 0)
         {
-            maxDeneme--;
-            int rastgeleIndex = Random.Range(0, yolListesi.Count);
-            Vector2Int secilenYol = yolListesi[rastgeleIndex];
-            int x = secilenYol.x;
-            int z = secilenYol.y;
+            attemptsLeft--;
+            int randomIndex = Random.Range(0, pathCells.Count);
+            Vector2Int chosenCell = pathCells[randomIndex];
+            int x = chosenCell.x;
+            int z = chosenCell.y;
 
-            bool ustteDuvarVar = (z + 1 < uzunluk) && mazeGrid[x, z + 1] == 1;
-            bool alttaDuvarVar = (z - 1 >= 0) && mazeGrid[x, z - 1] == 1;
-            bool sagdaDuvarVar = (x + 1 < genislik) && mazeGrid[x + 1, z] == 1;
-            bool soldaDuvarVar = (x - 1 >= 0) && mazeGrid[x - 1, z] == 1;
+            bool wallAbove = (z + 1 < length) && mazeGrid[x, z + 1] == 1;
+            bool wallBelow = (z - 1 >= 0) && mazeGrid[x, z - 1] == 1;
+            bool wallRight = (x + 1 < width) && mazeGrid[x + 1, z] == 1;
+            bool wallLeft = (x - 1 >= 0) && mazeGrid[x - 1, z] == 1;
 
-            bool dikeyKoridor = soldaDuvarVar && sagdaDuvarVar && !ustteDuvarVar && !alttaDuvarVar;
-            bool yatayKoridor = ustteDuvarVar && alttaDuvarVar && !soldaDuvarVar && !sagdaDuvarVar;
+            bool verticalCorridor = wallLeft && wallRight && !wallAbove && !wallBelow;
+            bool horizontalCorridor = wallAbove && wallBelow && !wallLeft && !wallRight;
 
-            if (dikeyKoridor || yatayKoridor)
+            if (verticalCorridor || horizontalCorridor)
             {
-                Vector3 kapiPozisyonu = new Vector3(x * 2f, 0, z * 2f);
-                
-                float gecerliMesafe = (maxDeneme > 500) ? kapiMesafeSiniri : 2f; 
+                Vector3 doorPosition = new Vector3(x * 2f, 0, z * 2f);
 
-                bool cokYakinKapiVar = false;
-                foreach (Vector3 yerlesenKapi in yerlesenKapilar)
+                // Late in the search, relax the spacing rule so all doors can still be placed
+                float requiredDistance = (attemptsLeft > 500) ? minDoorDistance : 2f;
+
+                bool tooCloseToAnotherDoor = false;
+                foreach (Vector3 existingDoor in placedDoorPositions)
                 {
-                    if (Vector3.Distance(kapiPozisyonu, yerlesenKapi) < gecerliMesafe)
+                    if (Vector3.Distance(doorPosition, existingDoor) < requiredDistance)
                     {
-                        cokYakinKapiVar = true;
+                        tooCloseToAnotherDoor = true;
                         break;
                     }
                 }
 
-                if (!cokYakinKapiVar)
+                if (!tooCloseToAnotherDoor)
                 {
-                    Quaternion kapiYonu = Quaternion.identity;
-                    if (yatayKoridor) kapiYonu = Quaternion.Euler(0, 90, 0);
+                    Quaternion doorRotation = Quaternion.identity;
+                    if (horizontalCorridor) doorRotation = Quaternion.Euler(0, 90, 0);
 
-                    GameObject olusanKapi = Instantiate(kapiPrefab, kapiPozisyonu, kapiYonu, transform);
-                    DoorController dc = olusanKapi.GetComponentInChildren<DoorController>();
-                    if (dc != null)
+                    GameObject spawnedDoor = Instantiate(doorPrefab, doorPosition, doorRotation, transform);
+                    DoorController doorController = spawnedDoor.GetComponentInChildren<DoorController>();
+                    if (doorController != null)
                     {
-                        yerlesenKapilarListesi.Add(dc);
+                        placedDoorControllers.Add(doorController);
                     }
 
-                    yerlesenKapilar.Add(kapiPozisyonu);
-                    yerlestirilenKapi++;
+                    placedDoorPositions.Add(doorPosition);
+                    placedDoorCount++;
                 }
-                
-                yolListesi.RemoveAt(rastgeleIndex);
+
+                pathCells.RemoveAt(randomIndex);
             }
         }
 
-        // 🎯 RASTGELE SORU DAĞITIMI
-        // Kaç soru çözülmesi gerekiyorsa o kadar kapıya soru veriyoruz, kalanlar boş kapı oluyor
-        int gerekenSoruSayisi = (SoruManager.instance != null) ? SoruManager.instance.toplamKapiSayisi : yerlesenKapilarListesi.Count;
+        // --- RANDOM QUESTION DISTRIBUTION ---
+        // Only as many doors as there are questions get a question, the rest open freely.
+        int questionsNeeded = (QuestionManager.instance != null)
+            ? QuestionManager.instance.TotalDoorCount
+            : placedDoorControllers.Count;
 
-        // Kapıları rastgele karıştırıyoruz
-        for (int i = 0; i < yerlesenKapilarListesi.Count; i++)
+        // Shuffle the doors
+        for (int i = 0; i < placedDoorControllers.Count; i++)
         {
-            DoorController temp = yerlesenKapilarListesi[i];
-            int rnd = Random.Range(i, yerlesenKapilarListesi.Count);
-            yerlesenKapilarListesi[i] = yerlesenKapilarListesi[rnd];
-            yerlesenKapilarListesi[rnd] = temp;
+            DoorController temp = placedDoorControllers[i];
+            int randomSwap = Random.Range(i, placedDoorControllers.Count);
+            placedDoorControllers[i] = placedDoorControllers[randomSwap];
+            placedDoorControllers[randomSwap] = temp;
         }
 
-        // İlk gerekenSoruSayisi kadar kapı soruları taşır, kalanı boş kapıdır
-        for (int i = 0; i < yerlesenKapilarListesi.Count; i++)
+        // The first doors in the shuffled list carry questions
+        for (int i = 0; i < placedDoorControllers.Count; i++)
         {
-            if (i < gerekenSoruSayisi)
-            {
-                yerlesenKapilarListesi[i].soruVarMi = true;
-            }
-            else
-            {
-                yerlesenKapilarListesi[i].soruVarMi = false;
-            }
+            placedDoorControllers[i].hasQuestion = i < questionsNeeded;
         }
     }
 }

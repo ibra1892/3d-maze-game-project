@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maze Quiz – Teacher panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Atkinson+Hyperlegible+Mono:wght@600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #EEF2F1;
+      --surface: #FFFFFF;
+      --ink: #17282C;
+      --muted: #5B6E72;
+      --line: #D3DDDB;
+      --accent: #0F6B6B;
+      --key: #E3A72F;
+      --danger: #B3362B;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+      font-size: 17px;
+      line-height: 1.5;
+    }
+    [hidden] { display: none !important; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; background: var(--ink); color: #fff;
+    }
+    .topbar h1 { margin: 0; font-size: 1.15rem; }
+
+    .signin { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 48px 16px; }
+    .auth-card {
+      width: 100%; max-width: 420px; background: var(--surface);
+      border: 1px solid var(--line); border-radius: var(--radius); padding: 24px;
+    }
+    .role-buttons { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+    #student-message { min-height: 1.5em; margin: 12px 0 0; font-weight: 700; color: var(--accent); }
+    #student-message.error { color: var(--danger); }
+
+    .layout {
+      display: grid; grid-template-columns: 280px 1fr; gap: 24px;
+      max-width: 1100px; margin: 24px auto; padding: 0 16px;
+    }
+    @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+    .panel + .panel { margin-top: 20px; }
+    h2 { margin: 0 0 12px; font-size: 1.15rem; }
+
+    label { display: block; font-weight: 700; margin-bottom: 4px; }
+    input, select, textarea {
+      width: 100%; padding: 9px 11px; background: #fff;
+      border: 1px solid #A9B9B6; border-radius: 6px;
+    }
+    textarea { min-height: 84px; resize: vertical; }
+    .field { margin-bottom: 14px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
+
+    .btn {
+      display: inline-block; padding: 9px 16px; border: 0; border-radius: 6px;
+      background: var(--accent); color: #fff; font-weight: 700; cursor: pointer;
+    }
+    .btn:hover { background: #0B5555; }
+    .btn.quiet { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+    .btn.quiet:hover { background: #E4F0EF; }
+    .btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; }
+
+    .room-list { list-style: none; margin: 16px 0 0; padding: 0; }
+    .room-list button {
+      width: 100%; text-align: left; padding: 9px 11px; margin-bottom: 6px;
+      background: #fff; border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+      font-family: "Atkinson Hyperlegible Mono", ui-monospace, monospace; font-weight: 600; letter-spacing: .08em;
+    }
+    .room-list button[aria-current="true"] { border-color: var(--accent); background: #E4F0EF; }
+
+    /* The one memorable element: the room code as a brass key tag. */
+    .key-tag {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      padding: 18px 22px; border-radius: var(--radius);
+      background: var(--key); color: #2A1E00;
+    }
+    .key-tag .code {
+      font-family: "Atkinson Hyperlegible Mono", ui-monospace, monospace;
+      font-weight: 600; font-size: 2.6rem; letter-spacing: .18em; line-height: 1;
+    }
+    .key-tag .meta { margin: 0; }
+    .key-tag .btn { margin-left: auto; background: #2A1E00; }
+
+    .questions { list-style: none; margin: 0; padding: 0; }
+    .questions li { padding: 12px 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; }
+    .questions li:first-child { border-top: 0; }
+    .questions .answer, .questions .hint { color: var(--muted); margin: 0; grid-column: 1; }
+    .badge { font-size: .85rem; font-weight: 700; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); margin-right: 8px; }
+    .badge.easy { background: #E1F1E4; } .badge.medium { background: #FBF0D2; } .badge.hard { background: #F6DAD6; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+    .table-wrap { overflow-x: auto; }
+
+    .empty { color: var(--muted); margin: 0; }
+    #message { min-height: 1.5em; margin: 12px 0 0; font-weight: 700; color: var(--accent); }
+    #message.error { color: var(--danger); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Maze Quiz · Teacher panel</h1>
+    <div id="user-button"></div>
+  </header>
+
+  <main>
+    <section id="signed-out" class="signin" hidden>
+      <div id="role-choice" class="auth-card">
+        <h2>Who are you?</h2>
+        <p class="empty">Teachers manage rooms and questions on this page. Students create an account here, then play in the game.</p>
+        <div class="role-buttons">
+          <button id="choose-teacher" class="btn" type="button">I'm a teacher</button>
+          <button id="choose-student" class="btn quiet" type="button">I'm a student</button>
+        </div>
+      </div>
+
+      <div id="teacher-auth" hidden>
+        <p><button class="btn quiet back" type="button">← Back</button></p>
+        <div id="sign-in"></div>
+      </div>
+
+      <div id="student-auth" class="auth-card" hidden>
+        <p><button class="btn quiet back" type="button">← Back</button></p>
+        <h2>Create a student account</h2>
+        <form id="student-form">
+          <div class="row">
+            <div class="field">
+              <label for="student-first-name">First name</label>
+              <input id="student-first-name" name="first_name" required maxlength="40">
+            </div>
+            <div class="field">
+              <label for="student-last-name">Last name</label>
+              <input id="student-last-name" name="last_name" required maxlength="40">
+            </div>
+          </div>
+          <div class="field">
+            <label for="student-email">Email</label>
+            <input id="student-email" name="email" type="email" required>
+          </div>
+          <div class="field">
+            <label for="student-password">Password (at least 8 characters)</label>
+            <input id="student-password" name="password" type="password" required minlength="8" maxlength="128">
+          </div>
+          <button class="btn" type="submit">Create account</button>
+        </form>
+        <p id="student-message" role="status"></p>
+        <p class="empty">Already have an account? Log in inside the game.</p>
+      </div>
+    </section>
+
+    <div id="signed-in" class="layout" hidden>
+      <aside>
+        <div class="panel">
+          <h2>Your rooms</h2>
+          <div class="row">
+            <div class="field">
+              <label for="duration">Minutes</label>
+              <input id="duration" type="number" min="1" max="180" value="15">
+            </div>
+            <div class="field">
+              <label for="question-count">Questions</label>
+              <input id="question-count" type="number" min="1" max="20" value="5" title="Between 1 and 20 questions">
+            </div>
+          </div>
+          <p class="empty" style="font-size:.9rem; margin-bottom:12px;">A room holds 1 to 20 questions.</p>
+          <button id="create-room" class="btn" type="button">Create room</button>
+          <ul id="room-list" class="room-list"></ul>
+          <p id="no-rooms" class="empty" hidden>No rooms yet. Create one to get a room code.</p>
+        </div>
+      </aside>
+
+      <section id="room-detail" hidden>
+        <div class="key-tag">
+          <span id="room-code" class="code"></span>
+          <p id="room-meta" class="meta"></p>
+          <button id="copy-code" class="btn" type="button">Copy code</button>
+        </div>
+
+        <div class="panel">
+          <h2>Add a question</h2>
+          <form id="question-form">
+            <div class="field">
+              <label for="question_text">Question</label>
+              <textarea id="question_text" name="question_text" required></textarea>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="correct_answer">Correct answer</label>
+                <input id="correct_answer" name="correct_answer" required>
+              </div>
+              <div class="field">
+                <label for="difficulty">Difficulty</label>
+                <select id="difficulty" name="difficulty">
+                  <option value="easy">Easy</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="hint">Hint (shown from the book in the maze)</label>
+              <input id="hint" name="hint">
+            </div>
+            <button class="btn" type="submit">Save question</button>
+          </form>
+          <p id="message" role="status"></p>
+        </div>
+
+        <div class="panel">
+          <h2>Questions in this room</h2>
+          <ul id="question-list" class="questions"></ul>
+          <p id="no-questions" class="empty" hidden>No questions yet. Add the first one above.</p>
+        </div>
+
+        <div class="panel">
+          <h2>Results</h2>
+          <div class="table-wrap">
+            <table id="score-table" hidden>
+              <thead>
+                <tr><th>Player</th><th>Solved</th><th>Time</th><th>Result</th><th>Finished</th></tr>
+              </thead>
+              <tbody id="score-list"></tbody>
+            </table>
+          </div>
+          <p id="no-scores" class="empty" hidden>No one has finished this room yet.</p>
+        </div>
+
+        <div class="panel">
+          <h2>Delete room</h2>
+          <p class="empty">Deleting a room also deletes its questions and results. This cannot be undone.</p>
+          <p><button id="delete-room" class="btn danger" type="button">Delete this room</button></p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+
+    function el(tag, props = {}, ...children) {
+      const node = document.createElement(tag);
+      for (const [key, value] of Object.entries(props)) {
+        if (key === "class") node.className = value;
+        else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+        else node.setAttribute(key, value);
+      }
+      node.append(...children); // strings become text nodes, so teacher input is never parsed as HTML
+      return node;
+    }
+
+    async function api(path, options = {}) {
+      const token = await Clerk.session.getToken();
+      const response = await fetch(path, {
+        ...options,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || response.statusText);
+      return body;
+    }
+
+    function showMessage(text, isError = false) {
+      const node = $("#message");
+      node.textContent = text;
+      node.className = isError ? "error" : "";
+    }
+
+    let rooms = [];
+    let selectedCode = null;
+    let signedInShown = null;
+
+    async function initApp() {
+      await Clerk.load();
+      Clerk.addListener(render);
+      render();
+    }
+
+    async function render() {
+      const signedIn = Boolean(Clerk.user);
+      if (signedIn === signedInShown) return;
+      signedInShown = signedIn;
+      $("#signed-out").hidden = signedIn;
+      $("#signed-in").hidden = !signedIn;
+      if (!signedIn) {
+        showAuthView("choice");
+        return;
+      }
+      if (signInMounted) {
+        Clerk.unmountSignIn($("#sign-in"));
+        signInMounted = false;
+      }
+      Clerk.mountUserButton($("#user-button"));
+      await loadRooms();
+    }
+
+    // view is "choice", "teacher" or "student"
+    let signInMounted = false;
+
+    function showAuthView(view) {
+      $("#role-choice").hidden = view !== "choice";
+      $("#teacher-auth").hidden = view !== "teacher";
+      $("#student-auth").hidden = view !== "student";
+      if (view === "teacher" && !signInMounted) {
+        Clerk.mountSignIn($("#sign-in"));
+        signInMounted = true;
+      }
+    }
+
+    async function loadRooms() {
+      rooms = (await api("/api/rooms")).rooms;
+      renderRoomList();
+      if (rooms.length && !selectedCode) await selectRoom(rooms[0].room_code);
+    }
+
+    function renderRoomList() {
+      $("#no-rooms").hidden = rooms.length > 0;
+      $("#room-list").replaceChildren(
+        ...rooms.map((room) => {
+          const button = el("button", { type: "button", onclick: () => selectRoom(room.room_code) }, room.room_code);
+          if (room.room_code === selectedCode) button.setAttribute("aria-current", "true");
+          return el("li", {}, button);
+        })
+      );
+    }
+
+    async function selectRoom(code) {
+      selectedCode = code;
+      renderRoomList();
+      $("#room-detail").hidden = false;
+      $("#room-code").textContent = code;
+      showMessage("");
+      await Promise.all([loadQuestions(), loadScores()]);
+    }
+
+    async function loadQuestions() {
+      const data = await api(`/api/rooms/${selectedCode}/questions`);
+      const count = data.questions.length;
+      const isFull = count >= data.question_count;
+      $("#room-meta").textContent = `${data.duration_minutes} minutes · ${count} of ${data.question_count} questions added`;
+      $("#question-form button[type=submit]").disabled = isFull;
+      if (isFull) showMessage("This room is full. Delete a question to add another.");
+      $("#no-questions").hidden = count > 0;
+      $("#question-list").replaceChildren(
+        ...data.questions.map((q) =>
+          el("li", {},
+            el("div", {}, el("span", { class: `badge ${q.difficulty}` }, q.difficulty), q.question_text),
+            el("button", { class: "btn danger", type: "button", onclick: () => deleteQuestion(q.id) }, "Delete"),
+            el("p", { class: "answer" }, `Answer: ${q.correct_answer}`),
+            q.hint ? el("p", { class: "hint" }, `Hint: ${q.hint}`) : ""
+          )
+        )
+      );
+    }
+
+    async function loadScores() {
+      const { scores } = await api(`/api/rooms/${selectedCode}/scores`);
+      $("#no-scores").hidden = scores.length > 0;
+      $("#score-table").hidden = scores.length === 0;
+      $("#score-list").replaceChildren(
+        ...scores.map((s) => {
+          const minutes = Math.floor(s.duration_seconds / 60);
+          const seconds = String(s.duration_seconds % 60).padStart(2, "0");
+          return el("tr", {},
+            el("td", {}, s.player_name),
+            el("td", {}, `${s.solved_question_count} / ${s.total_question_count}`),
+            el("td", {}, `${minutes}:${seconds}`),
+            el("td", {}, s.won ? "Escaped" : "Did not escape"),
+            el("td", {}, new Date(s.completed_at).toLocaleString())
+          );
+        })
+      );
+    }
+
+    async function deleteQuestion(id) {
+      if (!confirm("Delete this question?")) return;
+      try {
+        await api(`/api/rooms/${selectedCode}/questions/${id}`, { method: "DELETE" });
+        await loadQuestions();
+      } catch (err) {
+        showMessage(err.message, true);
+      }
+    }
+
+    $("#create-room").addEventListener("click", async () => {
+      try {
+        const { room } = await api("/api/rooms", {
+          method: "POST",
+          body: JSON.stringify({
+            duration_minutes: Number($("#duration").value),
+            question_count: Number($("#question-count").value),
+          }),
+        });
+        rooms.unshift(room);
+        await selectRoom(room.room_code);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    $("#choose-teacher").addEventListener("click", () => showAuthView("teacher"));
+    $("#choose-student").addEventListener("click", () => showAuthView("student"));
+    document.querySelectorAll(".back").forEach((button) =>
+      button.addEventListener("click", () => showAuthView("choice"))
+    );
+
+    $("#student-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.target;
+      const message = $("#student-message");
+      message.className = "";
+      message.textContent = "";
+      try {
+        const response = await fetch("/api/students/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(Object.fromEntries(new FormData(form))),
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.error || response.statusText);
+        form.reset();
+        message.textContent =
+          `Account created for ${body.student.first_name} ${body.student.last_name}. ` +
+          `Open the game and log in with ${body.student.email}.`;
+      } catch (err) {
+        message.className = "error";
+        message.textContent = err.message;
+      }
+    });
+
+    $("#delete-room").addEventListener("click", async () => {
+      const code = selectedCode;
+      if (!confirm(`Delete room ${code}? Its questions and results will be deleted too.`)) return;
+      try {
+        await api(`/api/rooms/${code}`, { method: "DELETE" });
+        rooms = rooms.filter((room) => room.room_code !== code);
+        selectedCode = null;
+        renderRoomList();
+        if (rooms.length) await selectRoom(rooms[0].room_code);
+        else $("#room-detail").hidden = true;
+      } catch (err) {
+        showMessage(err.message, true);
+      }
+    });
+
+    $("#copy-code").addEventListener("click", async () => {
+      await navigator.clipboard.writeText(selectedCode);
+      $("#copy-code").textContent = "Copied";
+      setTimeout(() => ($("#copy-code").textContent = "Copy code"), 1500);
+    });
+
+    $("#question-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.target;
+      try {
+        await api(`/api/rooms/${selectedCode}/questions`, {
+          method: "POST",
+          body: JSON.stringify(Object.fromEntries(new FormData(form))),
+        });
+        form.reset();
+        showMessage("Question saved.");
+        await loadQuestions();
+      } catch (err) {
+        showMessage(err.message, true);
+      }
+    });
+  </script>
+  <script
+    async
+    crossorigin="anonymous"
+    data-clerk-publishable-key="{{ clerk_publishable_key }}"
+    src="https://{{ clerk_frontend_api }}/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+    onload="initApp()"
+  ></script>
+</body>
+</html>

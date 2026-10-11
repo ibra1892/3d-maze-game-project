@@ -53,12 +53,12 @@ public class ItemPickup : MonoBehaviour
         {
             case ItemType.Bandage:
                 inventory.AddItem(ItemType.Bandage, 1);
-                Debug.Log("Bandaj alındı!");
+                //Debug.Log("Bandaj alındı!");
                 break;
 
             case ItemType.EnergyDrink:
                 inventory.AddItem(ItemType.EnergyDrink, 1);
-                Debug.Log("Enerji içeceği alındı!");
+                //Debug.Log("Enerji içeceği alındı!");
                 break;
         }
 

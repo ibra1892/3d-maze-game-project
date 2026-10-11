@@ -16,7 +16,7 @@ public class DamageDealer : MonoBehaviour
             {
                 player.TakeHit(damageAmount); // Canı azalt
                 nextDamageTime = Time.time + damageInterval; // Bekleme süresini güncelle
-                Debug.Log("Oyuncu hasar aldı! Kalan Can: " + player.HP);
+                //Debug.Log("Oyuncu hasar aldı! Kalan Can: " + player.HP);
             }
         }
     }
