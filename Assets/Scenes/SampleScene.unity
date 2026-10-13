@@ -8133,7 +8133,7 @@ MonoBehaviour:
   exitDoorPrefab: {fileID: 8631691907161228608, guid: b8f533d8864eef54eb8993bc41431049, type: 3}
   doorCount: 20
   minDoorDistance: 6
-  torchDensity: 25
+  torchDensity: 40
 --- !u!1 &891207655
 GameObject:
   m_ObjectHideFlags: 0
