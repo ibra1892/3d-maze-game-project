@@ -91,27 +91,31 @@ public class DoorHintDrawer : MonoBehaviour
         // 1. Ses Çalma Garantisi
         PlayHintSound();
 
-        // 2. Oyuncunun Gerçek Pozisyonunu Bul (Kameradan ziyade karakterin gövdesi)
-        Transform target = FindPlayerTarget(playerCamera);
+        // 2. Yön tespiti için kamera DEĞİL, karakterin gövdesi kullanılır.
+        //    (Kamera yerine oyuncu: kamera duvara sıkışsa bile doğru tarafı verir.)
+        Transform target = FindPlayerTarget(null);
 
-        // 3. Çift Yön Tespiti (Dünya ekseninde kusursuz Dot Product)
+        // 3. Çift Yön Tespiti
+        //    Çekmece, parent'ının YEREL Z ekseninde kayıyor (localPosition.z).
+        //    Bu yüzden oyuncunun pozisyonunu da AYNI yerel uzaya çevirip Z işaretine bakıyoruz.
+        //    parent.forward + Dot yöntemi, modelin ekseni döndürülmüşse (-90 X rotasyonu gibi)
+        //    ya da scale negatifse yanlış sonuç veriyordu. Bu yöntem eksenden bağımsız çalışır.
         float direction = 1f;
         if (target != null)
         {
-            // Çekmecenin yerel Z ekseninin dünya uzayındaki yönü
-            Vector3 drawerForward = sliderTrans.parent != null ? sliderTrans.parent.forward : sliderTrans.forward;
-            
-            // Çekmeceden oyuncuya giden doğrultu
-            Vector3 toPlayer = target.position - sliderTrans.position;
+            Transform space = sliderTrans.parent != null ? sliderTrans.parent : sliderTrans;
+            Vector3 playerLocal = space.InverseTransformPoint(target.position);
 
-            // Yükseklik farkını yok sayıp sadece zemin açısını kıyasla
-            drawerForward.y = 0f;
-            toPlayer.y = 0f;
+            // Çekmecenin kapalı Z konumuna göre oyuncu hangi tarafta?
+            float side = playerLocal.z - sliderClosedLocalPos.z;
 
-            float dot = Vector3.Dot(drawerForward.normalized, toPlayer.normalized);
-            direction = (dot >= 0f) ? 1f : -1f;
+            // Oyuncu tam kapı düzleminin üstündeyse (neredeyse imkansız) varsayılan yönde kal
+            if (Mathf.Abs(side) > 0.01f)
+            {
+                direction = (side > 0f) ? 1f : -1f;
+            }
 
-            Debug.Log($"[DoorHintDrawer] Kapı Yön Tespiti -> Hedef: {target.name}, Dot: {dot:F2}, Yön: {(direction > 0 ? "Öne (+Z)" : "Arkaya (-Z)")}");
+            Debug.Log($"[DoorHintDrawer] Kapı Yön Tespiti -> Hedef: {target.name}, Yerel Z: {playerLocal.z:F2}, Yön: {(direction > 0 ? "Öne (+Z)" : "Arkaya (-Z)")}");
         }
         else
         {
