@@ -5,10 +5,8 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Text.RegularExpressions;
 
-// Field names match the JSON sent by the server (snake_case) because JsonUtility needs exact names.
 [System.Serializable]
 public class QuestionData
 {
@@ -30,8 +28,6 @@ public class RoomData
 
 public class QuestionManager : MonoBehaviour
 {
-    // [FormerlySerializedAs] keeps the references you already assigned in the Inspector
-    // after the fields were renamed from Turkish to English.
     [Header("UI Elements")]
     [FormerlySerializedAs("soruPaneli")] public GameObject questionPanel;
     [FormerlySerializedAs("soruText")] public TextMeshProUGUI questionText;
@@ -40,6 +36,11 @@ public class QuestionManager : MonoBehaviour
     [FormerlySerializedAs("kapiSkorText")] public TextMeshProUGUI doorScoreText;
     [FormerlySerializedAs("skorBarFill")] public Image scoreBarFill;
 
+    [Header("Hint & Abandon UI")]
+    public GameObject hintPanel;            // Panel_Hint
+    public TextMeshProUGUI hintText;        // Hint_Note
+    public Camera playerCamera;             // Boş bırakılırsa Camera.main otomatik alınır
+
     [Header("Server")]
     public string serverUrl = "http://localhost:5000";
     [Tooltip("For testing: if filled in, this room is joined automatically when the scene starts.")]
@@ -47,11 +48,14 @@ public class QuestionManager : MonoBehaviour
 
     public static QuestionManager instance;
 
-    // Name of the method on DoorController that opens the door.
     private const string OpenDoorMessage = "OpenDoor";
 
     private GameObject currentDoor;
     private readonly List<QuestionData> remainingQuestions = new List<QuestionData>();
+    
+    // Kapıya soru sabitleme hafızası
+    private readonly Dictionary<GameObject, QuestionData> assignedDoorQuestions = new Dictionary<GameObject, QuestionData>();
+    
     private QuestionData activeQuestion;
 
     private bool isRoomReady;
@@ -75,12 +79,12 @@ public class QuestionManager : MonoBehaviour
 
     void Start()
     {
-        // The maze is built only after a room is joined. Pause the game until then,
-        // otherwise the player falls through the empty scene.
         Time.timeScale = 0;
 
         panelOriginalPosition = questionPanel.transform.localPosition;
         questionPanel.SetActive(false);
+
+        if (hintPanel != null) hintPanel.SetActive(false);
         if (scoreBarFill != null) scoreBarFill.fillAmount = 0f;
         UpdateScoreUI();
 
@@ -89,7 +93,11 @@ public class QuestionManager : MonoBehaviour
             submitButton.onClick.AddListener(SubmitAnswer);
         }
 
-        // If the player came from the main menu, use the room and server address chosen there.
+        if (playerCamera == null)
+        {
+            playerCamera = Camera.main;
+        }
+
         if (!string.IsNullOrEmpty(GameSession.ServerUrl)) serverUrl = GameSession.ServerUrl;
 
         string roomToJoin = !string.IsNullOrWhiteSpace(GameSession.RoomCode) ? GameSession.RoomCode : autoJoinRoomCode;
@@ -105,17 +113,28 @@ public class QuestionManager : MonoBehaviour
 
     void Update()
     {
-        // While the panel is open, Enter also submits the answer.
-        if (questionPanel.activeSelf && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
+        if (questionPanel.activeSelf || (hintPanel != null && hintPanel.activeSelf))
         {
-            SubmitAnswer();
+            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+            {
+                SubmitAnswer();
+            }
+            else if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                if (hintPanel != null && hintPanel.activeSelf)
+                {
+                    CloseHint();
+                }
+                else
+                {
+                    AbandonQuestion();
+                }
+            }
         }
     }
 
-    // --- LOADING QUESTIONS FROM THE SERVER ---
+    // --- LOADING QUESTIONS FROM SERVER ---
 
-    // Called from the "Join" button after the student types the room code.
-    // onDone(success, errorMessage) lets the UI show an error or start the game.
     public void JoinRoom(string roomCode, System.Action<bool, string> onDone)
     {
         StartCoroutine(JoinRoomRoutine(roomCode.Trim().ToUpperInvariant(), onDone));
@@ -144,11 +163,25 @@ public class QuestionManager : MonoBehaviour
                 DurationMinutes = room.duration_minutes;
 
                 remainingQuestions.Clear();
+                assignedDoorQuestions.Clear();
                 remainingQuestions.AddRange(room.questions);
                 totalDoorCount = remainingQuestions.Count;
                 openedDoorCount = 0;
                 isRoomReady = true;
                 Time.timeScale = 1;
+
+                if (GameResultManager.Instance != null)
+                {
+                    if (room.duration_minutes > 0)
+                    {
+                        GameResultManager.Instance.SetTotalTime(room.duration_minutes * 60f);
+                    }
+
+                    foreach (var q in room.questions)
+                    {
+                        GameResultManager.Instance.RegisterQuestion(ParseDifficulty(q.difficulty));
+                    }
+                }
 
                 if (scoreBarFill != null) scoreBarFill.fillAmount = 0f;
                 UpdateScoreUI();
@@ -168,7 +201,6 @@ public class QuestionManager : MonoBehaviour
 
     // --- QUESTION FLOW ---
 
-    // Called by a door when the player interacts with it.
     public void AskQuestion(GameObject door)
     {
         if (questionPanel.activeSelf) return;
@@ -179,8 +211,7 @@ public class QuestionManager : MonoBehaviour
             return;
         }
 
-        // Every question has been used: remaining doors open without a question.
-        if (remainingQuestions.Count == 0)
+        if (remainingQuestions.Count == 0 && !assignedDoorQuestions.ContainsKey(door))
         {
             if (openedDoorCount < totalDoorCount)
             {
@@ -194,6 +225,8 @@ public class QuestionManager : MonoBehaviour
         }
 
         currentDoor = door;
+        
+        if (hintPanel != null) hintPanel.SetActive(false);
         questionPanel.SetActive(true);
 
         if (AudioManager.Instance != null) AudioManager.Instance.PlayPaperOpen();
@@ -202,12 +235,19 @@ public class QuestionManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        int randomIndex = Random.Range(0, remainingQuestions.Count);
-        activeQuestion = remainingQuestions[randomIndex];
+        if (assignedDoorQuestions.ContainsKey(door))
+        {
+            activeQuestion = assignedDoorQuestions[door];
+        }
+        else
+        {
+            int randomIndex = Random.Range(0, remainingQuestions.Count);
+            activeQuestion = remainingQuestions[randomIndex];
+            assignedDoorQuestions[door] = activeQuestion;
+        }
 
         questionText.text = activeQuestion.question_text;
 
-        // Clear the input field and focus it so the player can type right away.
         if (answerInput != null)
         {
             answerInput.text = "";
@@ -224,6 +264,11 @@ public class QuestionManager : MonoBehaviour
 
         if (IsAnswerCorrect(enteredAnswer, activeQuestion.correct_answer))
         {
+            if (GameResultManager.Instance != null)
+            {
+                GameResultManager.Instance.RecordCorrectAnswer(ParseDifficulty(activeQuestion.difficulty));
+            }
+
             if (AudioManager.Instance != null) AudioManager.Instance.PlayDoorOpen();
 
             if (openedDoorCount < totalDoorCount)
@@ -233,7 +278,15 @@ public class QuestionManager : MonoBehaviour
             UpdateScoreUI();
 
             remainingQuestions.Remove(activeQuestion);
+            if (currentDoor != null && assignedDoorQuestions.ContainsKey(currentDoor))
+            {
+                assignedDoorQuestions.Remove(currentDoor);
+            }
+
             activeQuestion = null;
+            ResetDoorDrawer(); // Kapı çekmecesini yerine sok
+
+            if (hintPanel != null) hintPanel.SetActive(false);
             questionPanel.SetActive(false);
             Time.timeScale = 1;
 
@@ -244,11 +297,16 @@ public class QuestionManager : MonoBehaviour
         }
         else
         {
+            if (GameResultManager.Instance != null)
+            {
+                GameResultManager.Instance.RecordFailedAttempt();
+            }
+
             if (shakeCoroutine != null) StopCoroutine(shakeCoroutine);
             shakeCoroutine = StartCoroutine(ShakeEffect());
             if (AudioManager.Instance != null) AudioManager.Instance.PlayWrong();
 
-            questionText.text = "<color=red>WRONG ANSWER, TRY AGAIN!</color>\n\n" + activeQuestion.question_text;
+            questionText.text = "<color=red>YANLIŞ CEVAP, TEKRAR DENE!</color>\n\n" + activeQuestion.question_text;
 
             if (answerInput != null)
             {
@@ -258,44 +316,148 @@ public class QuestionManager : MonoBehaviour
         }
     }
 
+    // --- HINT & ABANDON (ÇEKMECE VE FLAMA ENTEGRASYONU) ---
+
+    public void AbandonQuestion()
+    {
+        ResetDoorDrawer();
+
+        if (hintPanel != null) hintPanel.SetActive(false);
+        if (questionPanel != null) questionPanel.SetActive(false);
+
+        activeQuestion = null;
+        currentDoor = null;
+
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    public void OpenHint()
+    {
+        if (hintPanel == null || hintText == null) return;
+
+        // Çekmece açılma ve parşömen sesi
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPaperOpen();
+        }
+
+        // Soru parşömenini anında gizle ki flama ile üst üste binmesin
+        if (questionPanel != null) questionPanel.SetActive(false);
+
+        string hintContent = (activeQuestion != null && !string.IsNullOrWhiteSpace(activeQuestion.hint))
+            ? activeQuestion.hint
+            : "Bu kapı için ipucu bulunamadı.";
+
+        hintText.text = "<b>İPUCU:</b>\n" + hintContent;
+
+        if (GameResultManager.Instance != null)
+        {
+            GameResultManager.Instance.RecordHintUsed();
+        }
+
+        // Kapının kendisinden, alt objelerinden veya üst objelerinden güvenli arama
+        DoorHintDrawer drawer = null;
+        if (currentDoor != null)
+        {
+            drawer = currentDoor.GetComponent<DoorHintDrawer>() 
+                  ?? currentDoor.GetComponentInChildren<DoorHintDrawer>() 
+                  ?? currentDoor.GetComponentInParent<DoorHintDrawer>();
+        }
+
+        if (drawer != null && drawer.drawerSlider != null)
+        {
+            Transform camTransform = playerCamera != null ? playerCamera.transform : (Camera.main != null ? Camera.main.transform : null);
+
+            drawer.OpenDrawerCinematic(camTransform, () =>
+            {
+                hintPanel.SetActive(true);
+            });
+        }
+        else
+        {
+            hintPanel.SetActive(true);
+        }
+    }
+
+    public void CloseHint()
+    {
+        if (hintPanel != null) hintPanel.SetActive(false);
+
+        ResetDoorDrawer();
+
+        if (questionPanel != null)
+        {
+            questionPanel.SetActive(true);
+            if (answerInput != null) answerInput.ActivateInputField();
+        }
+    }
+
+    private void ResetDoorDrawer()
+    {
+        if (currentDoor != null)
+        {
+            DoorHintDrawer drawer = currentDoor.GetComponent<DoorHintDrawer>() 
+                                  ?? currentDoor.GetComponentInChildren<DoorHintDrawer>() 
+                                  ?? currentDoor.GetComponentInParent<DoorHintDrawer>();
+            if (drawer != null)
+            {
+                drawer.CloseDrawerInstant();
+            }
+        }
+    }
+
     public bool AreAllQuestionsSolved()
     {
         return openedDoorCount >= totalDoorCount;
     }
 
-    // --- TEXT FILTERING & LEVENSHTEIN ---
+    private GameResultManager.QuestionDifficulty ParseDifficulty(string difficultyStr)
+    {
+        if (string.IsNullOrEmpty(difficultyStr)) return GameResultManager.QuestionDifficulty.Easy;
 
-    // 1. Cleans math/set symbols, punctuation and extra spaces before comparing.
+        string normalized = difficultyStr.Trim().ToLowerInvariant();
+        if (normalized == "hard" || normalized == "zor" || normalized == "3")
+            return GameResultManager.QuestionDifficulty.Hard;
+        if (normalized == "medium" || normalized == "orta" || normalized == "2")
+            return GameResultManager.QuestionDifficulty.Medium;
+
+        return GameResultManager.QuestionDifficulty.Easy;
+    }
+
+    // --- ESNEK METİN TEMİZLEME VE TOLERANSLI LEVENSHTEIN ---
+
     private string CleanText(string text)
     {
         if (string.IsNullOrEmpty(text)) return "";
 
-        // Lowercase with Turkish rules. Both sides get the same treatment, so English works too.
-        CultureInfo turkishCulture = new CultureInfo("tr-TR");
-        string cleaned = text.Trim().ToLower(turkishCulture);
+        string cleaned = text.Trim();
 
-        // Remove set and bracket symbols: { } [ ] ( )
-        cleaned = Regex.Replace(cleaned, @"[\{\}\[\]\(\)]", "");
+        // 1. Büyük İ ve I tuzaklarını baştan çöz
+        cleaned = cleaned.Replace("İ", "i").Replace("I", "i");
+        cleaned = cleaned.ToLowerInvariant();
 
-        // Remove ? ! quotes ; : (keep commas and dots)
-        cleaned = Regex.Replace(cleaned, @"['""!?;:]", "");
+        // 2. Türkçe karakterleri eşitle
+        cleaned = cleaned.Replace('ı', 'i')
+                         .Replace('ğ', 'g')
+                         .Replace('ü', 'u')
+                         .Replace('ş', 's')
+                         .Replace('ö', 'o')
+                         .Replace('ç', 'c');
 
-        // Remove sentence-ending dots ("ankara." -> "ankara") but keep decimals ("1.4")
-        cleaned = Regex.Replace(cleaned, @"\.(?!\d)", "");
-
-        // Remove spaces around commas and dots ("2, 3" -> "2,3")
-        cleaned = Regex.Replace(cleaned, @"\s*([,\.])\s*", "$1");
-
-        // Decimal standard: "1.4" becomes "1,4"
+        // 3. Sayı formatlarını koru (12.5 veya 12,5)
         cleaned = Regex.Replace(cleaned, @"(?<=\d)\.(?=\d)", ",");
 
-        // Collapse repeated spaces
+        // 4. Parantez, tırnak, ünlem, soru işareti vb. sembolleri temizle
+        cleaned = Regex.Replace(cleaned, @"[\{\}\[\]\(\)]", "");
+        cleaned = Regex.Replace(cleaned, @"['""!?;:]", "");
+        cleaned = Regex.Replace(cleaned, @"\.(?!\d)", "");
         cleaned = Regex.Replace(cleaned, @"\s+", " ");
 
         return cleaned.Trim();
     }
 
-    // 2. Checks the answer against every alternative (separated by "|") with typo tolerance.
     private bool IsAnswerCorrect(string playerText, string correctText)
     {
         if (string.IsNullOrEmpty(playerText) || string.IsNullOrEmpty(correctText)) return false;
@@ -307,64 +469,78 @@ public class QuestionManager : MonoBehaviour
         {
             string cleanedTarget = CleanText(alternative);
 
+            // 1. Tam eşleşme
             if (cleanedPlayer == cleanedTarget) return true;
+
+            // 2. Kapsama kontrolü
+            if (cleanedPlayer.Length >= 4 && cleanedTarget.Length >= 4)
+            {
+                if (cleanedPlayer.Contains(cleanedTarget) || cleanedTarget.Contains(cleanedPlayer))
+                {
+                    if (Mathf.Abs(cleanedPlayer.Length - cleanedTarget.Length) <= 4)
+                        return true;
+                }
+            }
 
             int distance = LevenshteinDistance(cleanedPlayer, cleanedTarget);
             int maxLength = Mathf.Max(cleanedPlayer.Length, cleanedTarget.Length);
 
-            // 3 characters or fewer (e.g. "Nil", "1,4"): exact match only
+            if (maxLength == 0) continue;
+
             if (maxLength <= 3)
             {
                 if (distance == 0) return true;
             }
-            // 4-5 characters: allow 1 typo
-            else if (maxLength <= 5)
+            else if (maxLength <= 6)
             {
                 if (distance <= 1) return true;
             }
-            // Longer: 75% similarity or at most 2 typos
+            else if (maxLength <= 10)
+            {
+                if (distance <= 2) return true;
+            }
             else
             {
-                float similarity = 1.0f - ((float)distance / maxLength);
-                if (similarity >= 0.75f || distance <= 2) return true;
+                if (distance <= 3) return true;
             }
+
+            float similarity = 1.0f - ((float)distance / maxLength);
+            if (similarity >= 0.65f) return true;
         }
 
         return false;
     }
 
-    // 3. Number of single-character edits between two strings.
     private int LevenshteinDistance(string s, string t)
     {
+        if (string.IsNullOrEmpty(s)) return string.IsNullOrEmpty(t) ? 0 : t.Length;
+        if (string.IsNullOrEmpty(t)) return s.Length;
+
         int n = s.Length;
         int m = t.Length;
         int[,] d = new int[n + 1, m + 1];
 
-        if (n == 0) return m;
-        if (m == 0) return n;
-
-        for (int i = 0; i <= n; d[i, 0] = i++) { }
-        for (int j = 0; j <= m; d[0, j] = j++) { }
+        for (int i = 0; i <= n; i++) d[i, 0] = i;
+        for (int j = 0; j <= m; j++) d[0, j] = j;
 
         for (int i = 1; i <= n; i++)
         {
             for (int j = 1; j <= m; j++)
             {
-                int cost = (t[j - 1] == s[i - 1]) ? 0 : 1;
+                int cost = (s[i - 1] == t[j - 1]) ? 0 : 1;
                 d[i, j] = Mathf.Min(
                     Mathf.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
-                    d[i - 1, j - 1] + cost);
+                    d[i - 1, j - 1] + cost
+                );
             }
         }
         return d[n, m];
     }
 
-    // --- UI AND EFFECTS ---
-
     private void UpdateScoreUI()
     {
         if (doorScoreText != null)
-            doorScoreText.text = "Doors Opened: " + openedDoorCount + " / " + totalDoorCount;
+            doorScoreText.text = "Açılan Kapı: " + openedDoorCount + " / " + totalDoorCount;
 
         if (scoreBarFill != null && totalDoorCount > 0)
         {

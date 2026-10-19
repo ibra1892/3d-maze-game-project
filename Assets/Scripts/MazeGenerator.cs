@@ -5,8 +5,6 @@ using UnityEngine.Serialization;
 
 public class MazeGenerator : MonoBehaviour
 {
-    // [FormerlySerializedAs] keeps the values you already set in the Inspector
-    // after the fields were renamed from Turkish to English.
     [Header("Maze Size")]
     [FormerlySerializedAs("genislik")] public int width = 25;
     [FormerlySerializedAs("uzunluk")] public int length = 25;
@@ -35,8 +33,6 @@ public class MazeGenerator : MonoBehaviour
         StartCoroutine(GenerateWhenRoomIsReady());
     }
 
-    // The number of questions comes from the server, so the maze is built only after
-    // the student has joined a room. Without a QuestionManager it is built right away.
     private IEnumerator GenerateWhenRoomIsReady()
     {
         while (QuestionManager.instance != null && !QuestionManager.instance.IsRoomReady)
@@ -49,6 +45,9 @@ public class MazeGenerator : MonoBehaviour
 
     private void GenerateMaze()
     {
+        // Varsa daha önce üretilmiş eski parçaları temizle (üst üste binmeyi önler)
+        ClearOldGeneratedObjects();
+
         if (width % 2 == 0) width++;
         if (length % 2 == 0) length++;
 
@@ -78,7 +77,14 @@ public class MazeGenerator : MonoBehaviour
         PlaceDoors();
     }
 
-    // Recursive backtracker: carves a path through the grid, two cells at a time.
+    private void ClearOldGeneratedObjects()
+    {
+        for (int i = transform.childCount - 1; i >= 0; i--)
+        {
+            Destroy(transform.GetChild(i).gameObject);
+        }
+    }
+
     private void CarveMaze(int startX, int startZ)
     {
         mazeGrid[startX, startZ] = 0;
@@ -87,7 +93,6 @@ public class MazeGenerator : MonoBehaviour
         int[] directionX = { 0, 0, 2, -2 };
         int[] directionZ = { 2, -2, 0, 0 };
 
-        // Shuffle the order of the four directions
         List<int> directionOrder = new List<int> { 0, 1, 2, 3 };
         for (int i = 0; i < directionOrder.Count; i++)
         {
@@ -111,7 +116,6 @@ public class MazeGenerator : MonoBehaviour
         }
     }
 
-    // Knocks out some walls so the maze has loops and more than one route.
     private void OpenExtraPaths()
     {
         int wallsToRemove = (width * length) / 30;
@@ -147,7 +151,6 @@ public class MazeGenerator : MonoBehaviour
         }
     }
 
-    // True if opening this cell would create a 2x2 block of open floor.
     private bool CreatesOpenArea(int x, int z)
     {
         if (mazeGrid[x - 1, z] == 0 && mazeGrid[x, z - 1] == 0 && mazeGrid[x - 1, z - 1] == 0) return true;
@@ -174,10 +177,8 @@ public class MazeGenerator : MonoBehaviour
                     Vector3 floorPosition = new Vector3(x * 2f, 0, z * 2f);
                     Instantiate(floorPrefab, floorPosition, Quaternion.identity, transform);
 
-                    // --- SMART WALL TORCH SYSTEM ---
                     if (torchPrefab != null)
                     {
-                        // Skip the entrance and exit areas
                         if ((x > 1 || z > 1) && (x < width - 2 || z < length - 2))
                         {
                             if (Random.Range(0, 100) < torchDensity)
@@ -243,13 +244,11 @@ public class MazeGenerator : MonoBehaviour
 
     private void PlaceDoors()
     {
-        // Keep the entrance and exit cells free of doors
         pathCells.Remove(new Vector2Int(1, 1));
         pathCells.Remove(new Vector2Int(1, 0));
         pathCells.Remove(new Vector2Int(width - 2, length - 1));
         pathCells.Remove(new Vector2Int(width - 2, length - 2));
 
-        // DoorController scripts of the doors we place, used later to hand out questions
         List<DoorController> placedDoorControllers = new List<DoorController>();
 
         int placedDoorCount = 0;
@@ -277,8 +276,8 @@ public class MazeGenerator : MonoBehaviour
             {
                 Vector3 doorPosition = new Vector3(x * 2f, 0, z * 2f);
 
-                // Late in the search, relax the spacing rule so all doors can still be placed
-                float requiredDistance = (attemptsLeft > 500) ? minDoorDistance : 2f;
+                // Asgari 4 metreden daha yakın iki kapı konamaz (iç içe girmeyi kökten engeller)
+                float requiredDistance = (attemptsLeft > 500) ? minDoorDistance : Mathf.Max(minDoorDistance * 0.5f, 4f);
 
                 bool tooCloseToAnotherDoor = false;
                 foreach (Vector3 existingDoor in placedDoorPositions)
@@ -310,13 +309,10 @@ public class MazeGenerator : MonoBehaviour
             }
         }
 
-        // --- RANDOM QUESTION DISTRIBUTION ---
-        // Only as many doors as there are questions get a question, the rest open freely.
         int questionsNeeded = (QuestionManager.instance != null)
             ? QuestionManager.instance.TotalDoorCount
             : placedDoorControllers.Count;
 
-        // Shuffle the doors
         for (int i = 0; i < placedDoorControllers.Count; i++)
         {
             DoorController temp = placedDoorControllers[i];
@@ -325,7 +321,6 @@ public class MazeGenerator : MonoBehaviour
             placedDoorControllers[randomSwap] = temp;
         }
 
-        // The first doors in the shuffled list carry questions
         for (int i = 0; i < placedDoorControllers.Count; i++)
         {
             placedDoorControllers[i].hasQuestion = i < questionsNeeded;
