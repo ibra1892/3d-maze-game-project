@@ -1,8 +1,13 @@
 import base64
+import hashlib
+import hmac
 import os
 import re
 import secrets
+import smtplib
+import threading
 from datetime import datetime, timedelta, timezone
+from email.message import EmailMessage
 from functools import wraps
 
 import jwt
@@ -41,6 +46,19 @@ EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 STUDENT_TOKEN_DAYS = 30
 # Used so a login for an unknown email takes as long as one for a known email.
 DUMMY_PASSWORD_HASH = generate_password_hash("not-a-real-password")
+
+# Password reset codes
+RESET_CODE_MINUTES = 15       # how long a code works
+RESET_MAX_ATTEMPTS = 5        # wrong guesses before the code is thrown away
+RESET_COOLDOWN_SECONDS = 60   # minimum time between two code requests for the same account
+
+# Email settings are optional. Without them the reset code is printed in this terminal instead
+# of being emailed, which is handy for testing.
+SMTP_HOST = os.environ.get("SMTP_HOST", "")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USER = os.environ.get("SMTP_USER", "")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+SMTP_FROM = os.environ.get("SMTP_FROM", "") or SMTP_USER
 
 
 # ---------------------------------------------------------------- helpers
@@ -178,18 +196,41 @@ def get_room(room_code):
     return result.data[0] if result.data else None
 
 
+def split_answers(raw):
+    """Split "20, yirmi" into ["20", "yirmi"]. A "|" also separates answers.
+
+    A comma with a digit on both sides ("1,4" or "2, 3") stays inside the answer, because it is
+    part of a decimal number or a list such as a set. To give two numeric alternatives, use "|".
+    """
+    answers = []
+    start = 0
+    for index, character in enumerate(raw):
+        if character not in ",|":
+            continue
+        if character == ",":
+            before = raw[:index].rstrip()
+            after = raw[index + 1:].lstrip()
+            if before[-1:].isdigit() and after[:1].isdigit():
+                continue
+        answers.append(raw[start:index])
+        start = index + 1
+    answers.append(raw[start:])
+    return [answer.strip() for answer in answers if answer.strip()]
+
+
 def parse_question(data):
     question_text = (data.get("question_text") or "").strip()
-    correct_answer = (data.get("correct_answer") or "").strip()
+    # The game stores several accepted answers separated by "|" and checks each one.
+    answers = split_answers(data.get("correct_answer") or "")
     hint = (data.get("hint") or "").strip() or None
     difficulty = data.get("difficulty") or "medium"
-    if not question_text or not correct_answer:
+    if not question_text or not answers:
         raise ValueError("Question and correct answer are required.")
     if difficulty not in DIFFICULTIES:
         raise ValueError("Difficulty must be easy, medium or hard.")
     return {
         "question_text": question_text,
-        "correct_answer": correct_answer,
+        "correct_answer": "|".join(answers),
         "hint": hint,
         "difficulty": difficulty,
     }
@@ -332,6 +373,8 @@ def register_student():
         return error("Enter a valid email address.")
     if not 8 <= len(password) <= 128:
         return error("Password must be between 8 and 128 characters.")
+    if data.get("password_confirm") is not None and data["password_confirm"] != password:
+        return error("The two passwords do not match.")
 
     try:
         result = (
@@ -377,6 +420,122 @@ def login_student():
 def student_profile():
     """Unity calls this on start-up to check that the saved login is still valid."""
     return jsonify({"student": public_student(g.student)})
+
+
+# ---------------------------------------------------------------- password reset
+
+def hash_reset_code(student_id, code):
+    """Codes are stored only as a keyed hash, so a leaked database does not reveal them."""
+    message = f"{student_id}:{code}".encode()
+    return hmac.new(STUDENT_TOKEN_SECRET.encode(), message, hashlib.sha256).hexdigest()
+
+
+def deliver_reset_code(email, code):
+    body = (
+        f"Your Maze Quiz password reset code is: {code}\n\n"
+        f"It works for {RESET_CODE_MINUTES} minutes. "
+        "If you did not ask for this, you can ignore this email."
+    )
+
+    if not SMTP_HOST or not SMTP_USER or not SMTP_PASSWORD:
+        print(f"[EMAIL NOT CONFIGURED] Reset code for {email}: {code}")
+        return
+
+    try:
+        message = EmailMessage()
+        message["Subject"] = "Your Maze Quiz password reset code"
+        message["From"] = SMTP_FROM
+        message["To"] = email
+        message.set_content(body)
+
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(message)
+    except Exception as exc:  # the student is told nothing, so the error is only shown here
+        print(f"[EMAIL ERROR] Could not send the reset code to {email}: {exc}")
+
+
+@app.post("/api/students/forgot-password")
+def forgot_password():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    if len(email) > 254 or not EMAIL_PATTERN.match(email):
+        return error("Enter a valid email address.")
+
+    result = db.table("students").select("id, reset_requested_at").eq("email", email).limit(1).execute()
+    if result.data:
+        student = result.data[0]
+        now = datetime.now(timezone.utc)
+
+        last_request = student.get("reset_requested_at")
+        asked_recently = bool(last_request) and (
+            now - datetime.fromisoformat(last_request)
+        ).total_seconds() < RESET_COOLDOWN_SECONDS
+
+        if not asked_recently:
+            code = f"{secrets.randbelow(10 ** 6):06d}"
+            db.table("students").update(
+                {
+                    "reset_code_hash": hash_reset_code(student["id"], code),
+                    "reset_expires_at": (now + timedelta(minutes=RESET_CODE_MINUTES)).isoformat(),
+                    "reset_attempts": 0,
+                    "reset_requested_at": now.isoformat(),
+                }
+            ).eq("id", student["id"]).execute()
+
+            # Sent in the background so the answer takes the same time whether or not the account exists
+            threading.Thread(target=deliver_reset_code, args=(email, code), daemon=True).start()
+
+    # Same answer for every valid email, so nobody can find out who has an account
+    return jsonify({"message": "If an account with this email exists, a reset code has been sent."})
+
+
+@app.post("/api/students/reset-password")
+def reset_password():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    code = (data.get("code") or "").strip()
+    password = data.get("password") or ""
+
+    if not 8 <= len(password) <= 128:
+        return error("Password must be between 8 and 128 characters.")
+    if data.get("password_confirm") is not None and data["password_confirm"] != password:
+        return error("The two passwords do not match.")
+
+    invalid_code = error("Invalid or expired code.")
+
+    result = (
+        db.table("students")
+        .select("id, reset_code_hash, reset_expires_at, reset_attempts")
+        .eq("email", email)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        return invalid_code
+    student = result.data[0]
+
+    if not student["reset_code_hash"] or not student["reset_expires_at"]:
+        return invalid_code
+    if datetime.now(timezone.utc) > datetime.fromisoformat(student["reset_expires_at"]):
+        return invalid_code
+    if student["reset_attempts"] >= RESET_MAX_ATTEMPTS:
+        return invalid_code
+
+    if not hmac.compare_digest(student["reset_code_hash"], hash_reset_code(student["id"], code)):
+        db.table("students").update({"reset_attempts": student["reset_attempts"] + 1}).eq("id", student["id"]).execute()
+        return invalid_code
+
+    db.table("students").update(
+        {
+            "password_hash": generate_password_hash(password),
+            "reset_code_hash": None,
+            "reset_expires_at": None,
+            "reset_attempts": 0,
+        }
+    ).eq("id", student["id"]).execute()
+    return jsonify({"message": "Password changed. You can now log in."})
 
 
 # ---------------------------------------------------------------- public API (Unity)

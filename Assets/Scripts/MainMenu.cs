@@ -72,6 +72,9 @@ public class MainMenu : MonoBehaviour
     private TextMeshProUGUI leaderboardTitle;
     private TextMeshProUGUI leaderboardBody;
 
+    private TextMeshProUGUI showPasswordLabel;
+    private bool passwordVisible;
+
     private bool busy;
 
     // ------------------------------------------------------------ lifecycle
@@ -175,8 +178,24 @@ public class MainMenu : MonoBehaviour
         busy = false;
     }
 
+    // Switches the password field between dots and readable text.
+    private void TogglePasswordVisibility()
+    {
+        SetPasswordVisible(!passwordVisible);
+    }
+
+    private void SetPasswordVisible(bool visible)
+    {
+        passwordVisible = visible;
+        passwordInput.contentType = visible ? TMP_InputField.ContentType.Standard : TMP_InputField.ContentType.Password;
+        passwordInput.ForceLabelUpdate();
+        showPasswordLabel.text = visible ? "Hide" : "Show";
+    }
+
     private void SignIn(string token, StudentInfo student)
     {
+        SetPasswordVisible(false);
+
         GameSession.Token = token;
         GameSession.PlayerName = student.first_name + " " + student.last_name;
 
@@ -345,6 +364,12 @@ public class MainMenu : MonoBehaviour
         Application.OpenURL(GameSession.ServerUrl);
     }
 
+    // The #reset part makes the website open the password reset form directly.
+    private void OpenPasswordResetPage()
+    {
+        Application.OpenURL(GameSession.ServerUrl + "/#reset");
+    }
+
     // ------------------------------------------------------------ networking
 
     // Sends a request and reports (status code, response text). Status 0 means the server could not be reached.
@@ -457,13 +482,31 @@ public class MainMenu : MonoBehaviour
         CreateLabel(panel, "Log in", 44, TextAlignmentOptions.Center, Color.white, FontStyles.Bold);
 
         emailInput = CreateInput(panel, "Email", TMP_InputField.ContentType.EmailAddress);
-        passwordInput = CreateInput(panel, "Password", TMP_InputField.ContentType.Password);
+        // Password field with a Show/Hide button next to it
+        GameObject passwordRow = new GameObject("PasswordRow", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        passwordRow.transform.SetParent(panel, false);
+        SetPreferredHeight(passwordRow, 68);
+
+        HorizontalLayoutGroup rowLayout = passwordRow.GetComponent<HorizontalLayoutGroup>();
+        rowLayout.spacing = 12;
+        rowLayout.childControlWidth = true;
+        rowLayout.childControlHeight = true;
+        rowLayout.childForceExpandWidth = false;
+        rowLayout.childForceExpandHeight = true;
+
+        passwordInput = CreateInput(passwordRow.transform, "Password", TMP_InputField.ContentType.Password);
+        passwordInput.GetComponent<LayoutElement>().flexibleWidth = 1;
         passwordInput.onSubmit.AddListener(_ => Login());
+
+        Button showPasswordButton = CreateButton(passwordRow.transform, "Show", QuietColor, Color.white, TogglePasswordVisibility);
+        showPasswordButton.GetComponent<LayoutElement>().preferredWidth = 150;
+        showPasswordLabel = showPasswordButton.GetComponentInChildren<TextMeshProUGUI>();
 
         loginMessage = CreateMessageLabel(panel);
 
         CreateButton(panel, "Log in", AccentColor, Color.white, Login);
         CreateButton(panel, "Create account (opens website)", QuietColor, Color.white, OpenTeacherPage);
+        CreateButton(panel, "Forgot password? (opens website)", QuietColor, Color.white, OpenPasswordResetPage);
     }
 
     private void BuildMenuPanel()

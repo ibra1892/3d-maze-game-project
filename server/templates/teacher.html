@@ -44,8 +44,11 @@
       border: 1px solid var(--line); border-radius: var(--radius); padding: 24px;
     }
     .role-buttons { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
-    #student-message { min-height: 1.5em; margin: 12px 0 0; font-weight: 700; color: var(--accent); }
-    #student-message.error { color: var(--danger); }
+    .show-password { display: flex; align-items: center; gap: 8px; font-weight: 400; margin-bottom: 14px; cursor: pointer; }
+    .show-password input { width: auto; }
+    .helper { color: var(--muted); font-size: .9rem; margin: 4px 0 0; }
+    #student-message, #reset-message { min-height: 1.5em; margin: 12px 0 0; font-weight: 700; color: var(--accent); }
+    #student-message.error, #reset-message.error { color: var(--danger); }
 
     .layout {
       display: grid; grid-template-columns: 280px 1fr; gap: 24px;
@@ -157,10 +160,45 @@
             <label for="student-password">Password (at least 8 characters)</label>
             <input id="student-password" name="password" type="password" required minlength="8" maxlength="128">
           </div>
+          <div class="field">
+            <label for="student-password-confirm">Repeat password</label>
+            <input id="student-password-confirm" name="password_confirm" type="password" required minlength="8" maxlength="128">
+          </div>
+          <label class="show-password"><input id="show-student-password" type="checkbox"> Show passwords</label>
           <button class="btn" type="submit">Create account</button>
         </form>
         <p id="student-message" role="status"></p>
         <p class="empty">Already have an account? Log in inside the game.</p>
+        <p class="empty"><a href="#reset" id="open-reset">Forgot your password?</a></p>
+      </div>
+
+      <div id="reset-auth" class="auth-card" hidden>
+        <p><button class="btn quiet back" type="button">← Back</button></p>
+        <h2>Reset your password</h2>
+        <p class="empty">Enter your email and press "Send code". Then type the code from the email and choose a new password.</p>
+        <div class="field">
+          <label for="reset-email">Email</label>
+          <input id="reset-email" type="email" autocomplete="email">
+        </div>
+        <p><button id="send-reset-code" class="btn quiet" type="button">Send code</button></p>
+
+        <form id="reset-form">
+          <div class="field">
+            <label for="reset-code">Code from the email</label>
+            <input id="reset-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required>
+          </div>
+          <div class="field">
+            <label for="reset-password">New password (at least 8 characters)</label>
+            <input id="reset-password" type="password" required minlength="8" maxlength="128">
+          </div>
+          <div class="field">
+            <label for="reset-password-confirm">Repeat new password</label>
+            <input id="reset-password-confirm" type="password" required minlength="8" maxlength="128">
+          </div>
+          <label class="show-password"><input id="show-reset-password" type="checkbox"> Show passwords</label>
+          <button class="btn" type="submit">Change password</button>
+        </form>
+        <p id="reset-message" role="status"></p>
       </div>
     </section>
 
@@ -201,8 +239,9 @@
             </div>
             <div class="row">
               <div class="field">
-                <label for="correct_answer">Correct answer</label>
-                <input id="correct_answer" name="correct_answer" required>
+                <label for="correct_answer">Correct answer(s)</label>
+                <input id="correct_answer" name="correct_answer" required placeholder="e.g. 20, twenty">
+                <p class="helper">Separate several accepted answers with commas.</p>
               </div>
               <div class="field">
                 <label for="difficulty">Difficulty</label>
@@ -214,7 +253,7 @@
               </div>
             </div>
             <div class="field">
-              <label for="hint">Hint</label>
+              <label for="hint">Hint (shown from the book in the maze)</label>
               <input id="hint" name="hint">
             </div>
             <button class="btn" type="submit">Save question</button>
@@ -298,7 +337,8 @@
       $("#signed-out").hidden = signedIn;
       $("#signed-in").hidden = !signedIn;
       if (!signedIn) {
-        showAuthView("choice");
+        // The game opens the page with #reset to go straight to the password reset form
+        showAuthView(location.hash === "#reset" ? "reset" : "choice");
         return;
       }
       if (signInMounted) {
@@ -316,6 +356,7 @@
       $("#role-choice").hidden = view !== "choice";
       $("#teacher-auth").hidden = view !== "teacher";
       $("#student-auth").hidden = view !== "student";
+      $("#reset-auth").hidden = view !== "reset";
       if (view === "teacher" && !signInMounted) {
         Clerk.mountSignIn($("#sign-in"));
         signInMounted = true;
@@ -361,7 +402,7 @@
           el("li", {},
             el("div", {}, el("span", { class: `badge ${q.difficulty}` }, q.difficulty), q.question_text),
             el("button", { class: "btn danger", type: "button", onclick: () => deleteQuestion(q.id) }, "Delete"),
-            el("p", { class: "answer" }, `Answer: ${q.correct_answer}`),
+            el("p", { class: "answer" }, `Answer: ${q.correct_answer.split("|").join(" or ")}`),
             q.hint ? el("p", { class: "hint" }, `Hint: ${q.hint}`) : ""
           )
         )
@@ -416,8 +457,86 @@
     $("#choose-teacher").addEventListener("click", () => showAuthView("teacher"));
     $("#choose-student").addEventListener("click", () => showAuthView("student"));
     document.querySelectorAll(".back").forEach((button) =>
-      button.addEventListener("click", () => showAuthView("choice"))
+      button.addEventListener("click", () => {
+        history.replaceState(null, "", location.pathname);
+        showAuthView("choice");
+      })
     );
+
+    $("#open-reset").addEventListener("click", (event) => {
+      event.preventDefault();
+      showAuthView("reset");
+    });
+
+    function showResetMessage(text, isError) {
+      const message = $("#reset-message");
+      message.textContent = text;
+      message.className = isError ? "error" : "";
+    }
+
+    async function postJson(path, payload) {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json().catch(() => ({}));
+      return { ok: response.ok, body };
+    }
+
+    $("#send-reset-code").addEventListener("click", async () => {
+      const email = $("#reset-email").value.trim();
+      if (!email) {
+        showResetMessage("Enter your email first.", true);
+        return;
+      }
+      showResetMessage("Sending...", false);
+      try {
+        const { ok, body } = await postJson("/api/students/forgot-password", { email });
+        showResetMessage(ok ? body.message : body.error || "Something went wrong.", !ok);
+      } catch (err) {
+        showResetMessage(err.message, true);
+      }
+    });
+
+    $("#show-reset-password").addEventListener("change", (event) => {
+      const type = event.target.checked ? "text" : "password";
+      $("#reset-password").type = type;
+      $("#reset-password-confirm").type = type;
+    });
+
+    $("#reset-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const password = $("#reset-password").value;
+      if (password !== $("#reset-password-confirm").value) {
+        showResetMessage("The two passwords do not match.", true);
+        return;
+      }
+      try {
+        const { ok, body } = await postJson("/api/students/reset-password", {
+          email: $("#reset-email").value.trim(),
+          code: $("#reset-code").value.trim(),
+          password,
+          password_confirm: $("#reset-password-confirm").value,
+        });
+        if (ok) {
+          event.target.reset();
+          $("#reset-password").type = "password";
+          $("#reset-password-confirm").type = "password";
+          showResetMessage(body.message + " Open the game and log in.", false);
+        } else {
+          showResetMessage(body.error || "Something went wrong.", true);
+        }
+      } catch (err) {
+        showResetMessage(err.message, true);
+      }
+    });
+
+    $("#show-student-password").addEventListener("change", (event) => {
+      const type = event.target.checked ? "text" : "password";
+      $("#student-password").type = type;
+      $("#student-password-confirm").type = type;
+    });
 
     $("#student-form").addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -425,6 +544,11 @@
       const message = $("#student-message");
       message.className = "";
       message.textContent = "";
+      if ($("#student-password").value !== $("#student-password-confirm").value) {
+        message.className = "error";
+        message.textContent = "The two passwords do not match.";
+        return;
+      }
       try {
         const response = await fetch("/api/students/register", {
           method: "POST",
@@ -434,6 +558,8 @@
         const body = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(body.error || response.statusText);
         form.reset();
+        $("#student-password").type = "password";
+        $("#student-password-confirm").type = "password";
         message.textContent =
           `Account created for ${body.student.first_name} ${body.student.last_name}. ` +
           `Open the game and log in with ${body.student.email}.`;
