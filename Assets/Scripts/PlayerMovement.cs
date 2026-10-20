@@ -35,7 +35,7 @@ public class PlayerMovement : MonoBehaviour
     //  HP & STAMINA
     // ═══════════════════════════════════════════════════════
     [Header("HP & Stamina")]
-    public float maxHP          = 100f;
+    public float maxHP           = 100f;
     public float maxStamina     = 100f;
     public float staminaDrain   = 6f;
     public float staminaRecover = 8f;
@@ -79,8 +79,12 @@ public class PlayerMovement : MonoBehaviour
     // ═══════════════════════════════════════════════════════
     void Update()
     {
-        // YENİ EKLENEN SATIR: Oyun durduğunda karakteri ve inputları dondurur.
-        if (Time.timeScale == 0) return;
+        // Panel açıkken veya oyun duraklatıldığında tüm hareketi ve animasyonu dondur
+        if (Time.timeScale == 0)
+        {
+            if (animator != null) animator.SetFloat("Speed", 0f);
+            return;
+        }
 
         if (isDead || isKnockedDown) return;
 
@@ -223,7 +227,7 @@ public class PlayerMovement : MonoBehaviour
                 Stamina += staminaRecover * Time.deltaTime;
         }
 
-        if (Stamina <= 0)                          isExhausted = true;
+        if (Stamina <= 0)                             isExhausted = true;
         if (isExhausted && Stamina >= maxStamina * 0.2f) isExhausted = false;
 
         Stamina = Mathf.Clamp(Stamina, 0f, maxStamina);
@@ -291,12 +295,12 @@ public class PlayerMovement : MonoBehaviour
     {
         walkSpeed += bonus;
         runSpeed  += bonus;
-        staminaInfinite = true;    // ← ekle
+        staminaInfinite = true;
 
         yield return new WaitForSeconds(duration);
 
         walkSpeed -= bonus;
         runSpeed  -= bonus;
-        staminaInfinite = false;   // ← ekle
+        staminaInfinite = false;
     }
 }

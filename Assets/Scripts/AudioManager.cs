@@ -22,6 +22,7 @@ public class AudioManager : MonoBehaviour
     public AudioClip correctAnswer;
     public AudioClip wrongAnswer;
     public AudioClip paperOpen;
+    public AudioClip drawerOpen; // Çekmece açılma sesi eklendi
 
     private AudioSource sfxSource;
     private AudioSource footstepSource;
@@ -39,6 +40,15 @@ public class AudioManager : MonoBehaviour
         footstepSource.loop = false;
     }
 
+    // Oyun durduğunda (soru veya ipucu açıkken) çalan ayak sesini anında susturur
+    void Update()
+    {
+        if (Time.timeScale == 0)
+        {
+            StopFootstep();
+        }
+    }
+
     // Normal kısa sesler için
     public void Play(AudioClip clip, float volume = 1f)
     {
@@ -50,13 +60,16 @@ public class AudioManager : MonoBehaviour
     public void PlayDoorOpen()
     {
         if (doorOpen == null || sfxSource == null) return;
-        sfxSource.Stop();       // Çalan mevcut sesi keser
+        sfxSource.Stop();
         sfxSource.clip = doorOpen; 
-        sfxSource.Play();       // Yeni kapı sesini baştan başlatır
+        sfxSource.Play();
     }
 
     public void PlayFootstep(bool isRunning)
     {
+        // Panel açıkken veya oyun duraklatıldığında yeni ayak sesi çalınmasını engeller
+        if (Time.timeScale == 0) return;
+
         if (footstepSource == null) return;
         AudioClip clip = isRunning ? footstepRun : footstepWalk;
         if (clip == null || footstepSource.isPlaying) return;
@@ -91,10 +104,11 @@ public class AudioManager : MonoBehaviour
 
     void PlaySwallow() => Play(canSwallow, 0.9f);
 
-    public void PlayHurt()      => Play(hurtSound,    0.9f);
-    public void PlayDeath()     => Play(deathSound,    1f);
-    public void PlayPickup()    => Play(pickupSound,   0.7f);
-    public void PlayCorrect()   => Play(correctAnswer, 1f);
-    public void PlayWrong()     => Play(wrongAnswer,   1f);
-    public void PlayPaperOpen() => Play(paperOpen,     1f);
+    public void PlayHurt()       => Play(hurtSound,     0.9f);
+    public void PlayDeath()      => Play(deathSound,    1f);
+    public void PlayPickup()     => Play(pickupSound,   0.7f);
+    public void PlayCorrect()    => Play(correctAnswer, 1f);
+    public void PlayWrong()      => Play(wrongAnswer,   1f);
+    public void PlayPaperOpen()  => Play(paperOpen,     1f);
+    public void PlayDrawerOpen() => Play(drawerOpen,    1f); // Çekmece sesi tetikleyicisi
 }
