@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro; // Ekrana TextMeshPro ile yazı yazabilmek için gerekli
+using UnityEngine.SceneManagement;
 
 public class GameResultManager : MonoBehaviour
 {
@@ -22,6 +23,14 @@ public class GameResultManager : MonoBehaviour
     [Header("UI References")]
     [Tooltip("Drag the Timertext UI element here")]
     public TextMeshProUGUI timerText; // Ekranda oluşturduğumuz 10:00 yazısını tutacak referans
+
+    [Header("Game Over & Result Panel")]
+    [Tooltip("Süre bittiğinde veya çıkışta açılan parşömen (ExitMessagePanel)")]
+    public GameObject exitMessagePanel;
+    [Tooltip("Parşömenin içindeki metin bileşeni")]
+    public TextMeshProUGUI exitMessageText;
+    [Tooltip("Süre dolunca gizlenecek oyun içi HUD (Opsiyonel)")]
+    public GameObject inGameHUD;
 
     [Header("Tracking Metrics (For Evaluation)")]
     [SerializeField] private int failedAttempts = 0;
@@ -54,6 +63,33 @@ public class GameResultManager : MonoBehaviour
         remainingTime = totalTimeInSeconds;
         isTimerRunning = true;
         UpdateTimerUI();
+        FindUIElements();
+    }
+
+    private void FindUIElements()
+    {
+        // Inspector'dan atanmadıysa sahneden otomatik bul
+        if (exitMessagePanel == null)
+        {
+            GameObject canvas = GameObject.Find("Canvas");
+            if (canvas != null)
+            {
+                Transform[] allChildren = canvas.GetComponentsInChildren<Transform>(true);
+                foreach (Transform t in allChildren)
+                {
+                    if (t.name == "ExitMessagePanel")
+                    {
+                        exitMessagePanel = t.gameObject;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (exitMessagePanel != null && exitMessageText == null)
+        {
+            exitMessageText = exitMessagePanel.GetComponentInChildren<TextMeshProUGUI>(true);
+        }
     }
 
     private void Update()
@@ -97,9 +133,58 @@ public class GameResultManager : MonoBehaviour
         }
     }
 
+    // Süre dolduğunda devreye giren fonksiyon
     private void OnTimeExpired()
     {
         Debug.LogWarning("[GameResultManager] Süre doldu!");
+        TriggerGameOver();
+    }
+
+    public void TriggerGameOver()
+    {
+        if (isGameCompleted) return;
+
+        // 1. Durumu sonlandır ve skoru hesapla
+        float finalScore = CalculateFinalScore();
+
+        // 2. Oyunu dondur ve fareyi serbest bırak
+        Time.timeScale = 0f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // 3. Açık soru veya ipucu paneli varsa kapat
+        if (QuestionManager.instance != null)
+        {
+            if (QuestionManager.instance.questionPanel != null) QuestionManager.instance.questionPanel.SetActive(false);
+            if (QuestionManager.instance.hintPanel != null) QuestionManager.instance.hintPanel.SetActive(false);
+        }
+
+        // 4. Oyun içi HUD öğelerini gizle (isteğe bağlı)
+        if (inGameHUD != null)
+        {
+            inGameHUD.SetActive(false);
+        }
+
+        // 5. Parşömeni yenilgi metniyle ekrana getir
+        FindUIElements();
+
+        if (exitMessagePanel != null && exitMessageText != null)
+        {
+            int targetDoors = QuestionManager.instance != null ? QuestionManager.instance.TotalDoorCount : 10;
+
+            exitMessageText.text = 
+                "<b><size=130%><color=#800000>SÜRE DOLDU!</color></size></b>\n" +
+                "<size=90%><color=#3E1F07>Zaman tükendi, labirentte mahsur kaldın...</color></size>\n\n" +
+                "<b><size=115%><color=#5B1F1F>SKOR: " + finalScore.ToString("F1") + " / 100</color></size></b>\n\n" +
+                "<size=85%><color=#2C1A0C>" +
+                "• Çözülen Soru Sayısı: " + correctAnswersCount + " / " + targetDoors + "\n" +
+                "• Hatalı Deneme: " + failedAttempts + "\n" +
+                "• Kullanılan İpucu: " + hintsUsed + "\n" +
+                "• Kalan Süre: 00:00" +
+                "</color></size>";
+
+            exitMessagePanel.SetActive(true);
+        }
     }
 
     // --- SETUP & REGISTRATION ---
@@ -197,4 +282,5 @@ public class GameResultManager : MonoBehaviour
     public int GetCorrectAnswersCount() => correctAnswersCount;
     public float GetRemainingTime() => remainingTime;
     public float GetTotalTime() => totalTimeInSeconds;
+    public bool IsGameCompleted() => isGameCompleted;
 }
