@@ -414,6 +414,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MainMenu
   serverUrl: http://localhost:5000
   gameSceneName: SampleScene
+  backgroundSprite: {fileID: 21300000, guid: 41d3d857390cf3043961a93ce717a2a4, type: 3}
+  frameSprite: {fileID: 21300000, guid: 9c54e5d91bad97444a0c3606a3829d4b, type: 3}
+  parchmentPanelSprite: {fileID: 21300000, guid: a2e4e7c7a5986f849a98fa9eff131684, type: 3}
+  ribbonButtonSprite: {fileID: 21300000, guid: 96b42a404a096cb47bafa3ba21a9311c, type: 3}
+  secondaryButtonSprite: {fileID: 0}
+  themeFont: {fileID: 11400000, guid: b08d5840e798d6643bbe76cef578490e, type: 2}
+  panelSize: {x: 1400, y: 900}
+  panelOffset: {x: 0, y: -45}
+  frameArtFill: {x: 0.96, y: 0.82}
+  frameWindowMargin: {x: 0.15, y: 0.175}
+  ribbonButtonHeight: 88
 --- !u!4 &1946854103
 Transform:
   m_ObjectHideFlags: 0
