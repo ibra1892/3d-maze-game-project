@@ -79,6 +79,17 @@ def to_int(value, minimum, maximum, default=None):
     return number if minimum <= number <= maximum else default
 
 
+def to_score(value):
+    """A final score from the game: a number from 0 to 100, kept to one decimal place."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if number != number or not 0 <= number <= 100:  # number != number catches NaN
+        return None
+    return round(number, 1)
+
+
 _known_teachers = set()
 
 
@@ -349,7 +360,10 @@ def list_scores(room_code):
         return error("Room not found.", 404)
     result = (
         db.table("scores")
-        .select("player_name, duration_seconds, solved_question_count, total_question_count, won, completed_at")
+        .select(
+            "player_name, score, failed_attempts, hints_used, duration_seconds, "
+            "solved_question_count, total_question_count, won, completed_at"
+        )
         .eq("room_code", room["room_code"])
         .order("completed_at", desc=True)
         .execute()
@@ -574,8 +588,14 @@ def submit_score(room_code):
     duration_seconds = to_int(data.get("duration_seconds"), 0, 86400)
     solved = to_int(data.get("solved_question_count"), 0, 1000)
     total = to_int(data.get("total_question_count"), 0, 1000)
-    if None in (duration_seconds, solved, total) or solved > total:
+    failed_attempts = to_int(data.get("failed_attempts"), 0, 10000)
+    hints_used = to_int(data.get("hints_used"), 0, 10000)
+    score = to_score(data.get("score"))
+    if None in (duration_seconds, solved, total, failed_attempts, hints_used, score) or solved > total:
         return error("Invalid score data.")
+
+    # Escaping is only possible after every question is solved, so "won" must agree with the counts.
+    won = bool(data.get("won")) and total > 0 and solved == total
 
     result = (
         db.table("scores")
@@ -588,7 +608,10 @@ def submit_score(room_code):
                 "duration_seconds": duration_seconds,
                 "solved_question_count": solved,
                 "total_question_count": total,
-                "won": bool(data.get("won")),
+                "won": won,
+                "score": score,
+                "failed_attempts": failed_attempts,
+                "hints_used": hints_used,
             }
         )
         .execute()
@@ -598,14 +621,14 @@ def submit_score(room_code):
 
 @app.get("/api/rooms/<room_code>/leaderboard")
 def leaderboard(room_code):
-    """Best result of each player in this room: escaped first, then most solved, then fastest."""
+    """Best result of each player in this room: highest score first, then fastest."""
     room = get_room(room_code)
     if not room:
         return error("Room not found.", 404)
 
     rows = (
         db.table("scores")
-        .select("student_id, player_name, duration_seconds, solved_question_count, total_question_count, won")
+        .select("student_id, player_name, score, duration_seconds, solved_question_count, total_question_count, won")
         .eq("room_code", room["room_code"])
         .execute()
         .data
@@ -614,7 +637,8 @@ def leaderboard(room_code):
     best = {}
     for row in rows:
         player_key = row["student_id"] if row["student_id"] is not None else row["player_name"]
-        sort_key = (not row["won"], -row["solved_question_count"], row["duration_seconds"])
+        # The score already rewards solved questions, opened doors and time left, so it decides the order.
+        sort_key = (-float(row["score"] or 0), row["duration_seconds"])
         if player_key not in best or sort_key < best[player_key][0]:
             best[player_key] = (sort_key, row)
 
@@ -623,6 +647,7 @@ def leaderboard(room_code):
         {
             "rank": position,
             "player_name": row["player_name"],
+            "score": float(row["score"] or 0),
             "solved_question_count": row["solved_question_count"],
             "total_question_count": row["total_question_count"],
             "duration_seconds": row["duration_seconds"],

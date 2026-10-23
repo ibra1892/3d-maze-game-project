@@ -286,6 +286,13 @@ public class Exit_Door_Controller : MonoBehaviour
                 messagePanel.SetActive(true);
             }
 
+            // Sonucu öğretmen paneline ve liderlik tablosuna kaydet.
+            // Test modunda sorular çözülmeden açıldıysa "kazandı" sayılmaz.
+            if (GameResultManager.Instance != null)
+            {
+                GameResultManager.Instance.SubmitResult(allSolved, messageText);
+            }
+
             Collider[] colliders = GetComponentsInChildren<Collider>();
             foreach (var col in colliders) col.enabled = false;
 

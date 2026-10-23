@@ -272,7 +272,7 @@
           <div class="table-wrap">
             <table id="score-table" hidden>
               <thead>
-                <tr><th>Player</th><th>Solved</th><th>Time</th><th>Result</th><th>Finished</th></tr>
+                <tr><th>Player</th><th>Score</th><th>Solved</th><th>Wrong</th><th>Hints</th><th>Time</th><th>Result</th><th>Finished</th></tr>
               </thead>
               <tbody id="score-list"></tbody>
             </table>
@@ -419,7 +419,10 @@
           const seconds = String(s.duration_seconds % 60).padStart(2, "0");
           return el("tr", {},
             el("td", {}, s.player_name),
+            el("td", {}, s.score == null ? "–" : `${Number(s.score).toFixed(1)} / 100`),
             el("td", {}, `${s.solved_question_count} / ${s.total_question_count}`),
+            el("td", {}, s.failed_attempts ?? "–"),
+            el("td", {}, s.hints_used ?? "–"),
             el("td", {}, `${minutes}:${seconds}`),
             el("td", {}, s.won ? "Escaped" : "Did not escape"),
             el("td", {}, new Date(s.completed_at).toLocaleString())

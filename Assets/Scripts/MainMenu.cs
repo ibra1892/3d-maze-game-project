@@ -32,6 +32,7 @@ public class MainMenu : MonoBehaviour
     {
         public int rank;
         public string player_name;
+        public float score;
         public int solved_question_count;
         public int total_question_count;
         public int duration_seconds;
@@ -336,7 +337,7 @@ public class MainMenu : MonoBehaviour
         }
 
         StringBuilder text = new StringBuilder();
-        text.AppendLine("<b>#<pos=9%>Player<pos=60%>Solved<pos=76%>Time<pos=91%>Exit</b>");
+        text.AppendLine("<b>#<pos=8%>Player<pos=48%>Score<pos=63%>Solved<pos=78%>Time<pos=91%>Exit</b>");
 
         int shown = Mathf.Min(entries.Length, 10);
         for (int i = 0; i < shown; i++)
@@ -345,14 +346,15 @@ public class MainMenu : MonoBehaviour
 
             // Remove < and > so a name can never inject formatting tags.
             string name = entry.player_name.Replace("<", "").Replace(">", "");
-            if (name.Length > 18) name = name.Substring(0, 16) + "...";
+            if (name.Length > 16) name = name.Substring(0, 14) + "...";
 
             string time = (entry.duration_seconds / 60) + ":" + (entry.duration_seconds % 60).ToString("00");
 
             text.AppendLine(
-                entry.rank + "<pos=9%>" + name +
-                "<pos=60%>" + entry.solved_question_count + "/" + entry.total_question_count +
-                "<pos=76%>" + time +
+                entry.rank + "<pos=8%>" + name +
+                "<pos=48%>" + entry.score.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) +
+                "<pos=63%>" + entry.solved_question_count + "/" + entry.total_question_count +
+                "<pos=78%>" + time +
                 "<pos=91%>" + (entry.won ? "Yes" : "No"));
         }
 
