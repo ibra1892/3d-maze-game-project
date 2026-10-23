@@ -30,7 +30,7 @@ public class MainMenu : MonoBehaviour
 
     private const string TokenPrefsKey = "maze_student_token";
 
-    // JSON modelleri (Orijinal yapıya dokunulmadı)
+    // JSON modelleri (Sunucu formatıyla birebir aynı)
     [Serializable] public class LoginRequest { public string email; public string password; }
     [Serializable] public class StudentInfo { public string first_name; public string last_name; public string email; }
     [Serializable] public class AuthResponse { public string token; public StudentInfo student; }
@@ -56,17 +56,17 @@ public class MainMenu : MonoBehaviour
     }
 
     // --- ORTAÇAĞ / LABİRENT RENK PALETİ ---
-    private static readonly Color BackgroundColor = new Color32(18, 14, 12, 255);       // Zindan karanlığı / Koyu taş
+    private static readonly Color BackgroundColor = new Color32(18, 14, 12, 255);       // Zindan karanlığı
     private static readonly Color ParchmentColor = new Color32(232, 218, 192, 255);     // Yıpranmış açık parşömen
-    private static readonly Color HeaderMaroonColor = new Color32(120, 28, 28, 255);    // Koyu Bordo / Mühür kırmızısı
-    private static readonly Color WoodButtonColor = new Color32(62, 36, 20, 255);       // Koyu Meşe Ahşap Buton
-    private static readonly Color GoldAccentColor = new Color32(205, 155, 45, 255);     // Antik Varak Altın
-    private static readonly Color PapyrusInputColor = new Color32(245, 237, 220, 255);  // Açık papirüs giriş kutusu
-    private static readonly Color InkColor = new Color32(35, 22, 14, 255);              // Koyu Mürekkep Kahvesi
-    private static readonly Color PlaceholderColor = new Color32(130, 110, 95, 255);    // Soluk Mürekkep
-    private static readonly Color MutedTextColor = new Color32(95, 68, 50, 255);        // Eskitme Sepya Metin
-    private static readonly Color ErrorTextColor = new Color32(165, 30, 30, 255);       // Uyarı Kırmızısı
-    private static readonly Color ButtonTextLight = new Color32(248, 238, 218, 255);    // Ahşap üstü kemik/altın yazı
+    private static readonly Color HeaderMaroonColor = new Color32(120, 28, 28, 255);    // Mühür kırmızısı
+    private static readonly Color WoodButtonColor = new Color32(62, 36, 20, 255);       // Meşe ahşap
+    private static readonly Color GoldAccentColor = new Color32(205, 155, 45, 255);     // Antik altın
+    private static readonly Color PapyrusInputColor = new Color32(245, 237, 220, 255);  // Papirüs kutusu
+    private static readonly Color InkColor = new Color32(35, 22, 14, 255);              // Mürekkep kahvesi
+    private static readonly Color PlaceholderColor = new Color32(130, 110, 95, 255);    // Soluk mürekkep
+    private static readonly Color MutedTextColor = new Color32(95, 68, 50, 255);        // Sepya metin
+    private static readonly Color ErrorTextColor = new Color32(165, 30, 30, 255);       // Uyarı kırmızısı
+    private static readonly Color ButtonTextLight = new Color32(248, 238, 218, 255);    // Kemik rengi yazı
 
     private Transform canvasTransform;
     private GameObject loginPanel;
@@ -88,7 +88,7 @@ public class MainMenu : MonoBehaviour
 
     private bool busy;
 
-    // ------------------------------------------------------------ lifecycle
+    // ------------------------------------------------------------ Yaşam Döngüsü
 
     void Awake()
     {
@@ -116,7 +116,7 @@ public class MainMenu : MonoBehaviour
         }
     }
 
-    // ------------------------------------------------------------ actions
+    // ------------------------------------------------------------ İşlemler
 
     private void Login()
     {
@@ -383,7 +383,7 @@ public class MainMenu : MonoBehaviour
         Application.OpenURL(GameSession.ServerUrl + "/#reset");
     }
 
-    // ------------------------------------------------------------ networking
+    // ------------------------------------------------------------ Ağ İletişimi
 
     private IEnumerator SendRequest(string method, string path, string jsonBody, string token, Action<long, string> onDone)
     {
@@ -424,7 +424,7 @@ public class MainMenu : MonoBehaviour
         return fallback;
     }
 
-    // ------------------------------------------------------------ UI building
+    // ------------------------------------------------------------ Arayüz Kurulumu
 
     private void ShowPanel(GameObject target)
     {
@@ -464,13 +464,11 @@ public class MainMenu : MonoBehaviour
 
         canvasTransform = canvasObject.transform;
 
-        // Arka plan: Karanlık zindan fonu
         RectTransform background = NewRect("Background", canvasTransform);
         Stretch(background, 0, 0);
         Image bgImg = background.gameObject.AddComponent<Image>();
         bgImg.color = BackgroundColor;
 
-        // Başlık: Altın Varak Görünüm
         TextMeshProUGUI title = CreateLabel(canvasTransform, "LABİRENT KAÇIŞI", 88, TextAlignmentOptions.Center, GoldAccentColor, FontStyles.Bold);
         RectTransform titleRect = title.rectTransform;
         titleRect.anchorMin = new Vector2(0.5f, 1f);
@@ -548,8 +546,6 @@ public class MainMenu : MonoBehaviour
 
         CreateButton(panel, "Geri Dön", WoodButtonColor, ButtonTextLight, () => ShowPanel(menuPanel));
     }
-
-    // ------------------------------------------------------------ UI helpers
 
     private RectTransform NewRect(string name, Transform parent)
     {
@@ -666,7 +662,6 @@ public class MainMenu : MonoBehaviour
         button.targetGraphic = image;
         button.onClick.AddListener(onClick);
 
-        // Hover ve tıklama efektleri
         ColorBlock colors = button.colors;
         colors.normalColor = image.color;
         colors.highlightedColor = new Color(image.color.r * 1.15f, image.color.g * 1.15f, image.color.b * 1.15f);

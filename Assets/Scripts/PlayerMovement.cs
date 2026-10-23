@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -10,7 +9,6 @@ public class PlayerMovement : MonoBehaviour
     public CharacterController controller;
     public TPSCameraRoot       cameraRoot;
     public Animator            animator;
-    public InventoryUI         inventory;
 
     // ═══════════════════════════════════════════════════════
     //  HAREKET
@@ -32,19 +30,16 @@ public class PlayerMovement : MonoBehaviour
     public float crouchSpeed   = 1.5f;
 
     // ═══════════════════════════════════════════════════════
-    //  HP & STAMINA
+    //  STAMINA (koşma enerjisi)
     // ═══════════════════════════════════════════════════════
-    [Header("HP & Stamina")]
-    public float maxHP           = 100f;
+    [Header("Stamina")]
     public float maxStamina     = 100f;
     public float staminaDrain   = 6f;
     public float staminaRecover = 8f;
     public float staminaWaitTime = 2f;
 
-    [HideInInspector] public float HP;
     [HideInInspector] public float Stamina;
     [HideInInspector] public bool  canMove = true;
-    [HideInInspector] public bool staminaInfinite = false;
 
     // ═══════════════════════════════════════════════════════
     //  PRIVATE
@@ -52,8 +47,6 @@ public class PlayerMovement : MonoBehaviour
     Vector3 velocity;
     bool    isGrounded;
     bool    isCrouching;
-    bool    isDead;
-    bool    isKnockedDown;
     bool    isExhausted;
     float   staminaCooldownTimer;
 
@@ -62,10 +55,8 @@ public class PlayerMovement : MonoBehaviour
     // ═══════════════════════════════════════════════════════
     void Start()
     {
-        HP      = maxHP;
         Stamina = maxStamina;
 
-        inventory = Object.FindFirstObjectByType<InventoryUI>();
         animator  = GetComponentInChildren<Animator>();
         if (animator == null)
             Debug.LogError("Animator bulunamadı!");
@@ -86,15 +77,12 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
-        if (isDead || isKnockedDown) return;
-
         GroundCheck();
         Move();
         Jump();
         ApplyGravity();
         HandleCrouch();
         HandleStamina();
-        HandleHealing();
     }
 
     // ═══════════════════════════════════════════════════════
@@ -211,12 +199,11 @@ public class PlayerMovement : MonoBehaviour
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
         bool  isMoving = (new Vector2(h, v)).sqrMagnitude > 0.01f;
-        bool  running  = Input.GetKey(KeyCode.LeftShift) && isMoving && !isCrouching && !isDead;
+        bool  running  = Input.GetKey(KeyCode.LeftShift) && isMoving && !isCrouching;
 
         if (running && !isExhausted && Stamina > 0)
         {
-            if (!staminaInfinite)
-                Stamina -= staminaDrain * Time.deltaTime;
+            Stamina -= staminaDrain * Time.deltaTime;
             staminaCooldownTimer = staminaWaitTime;
         }
         else
@@ -231,76 +218,5 @@ public class PlayerMovement : MonoBehaviour
         if (isExhausted && Stamina >= maxStamina * 0.2f) isExhausted = false;
 
         Stamina = Mathf.Clamp(Stamina, 0f, maxStamina);
-    }
-
-    // ═══════════════════════════════════════════════════════
-    //  İYİLEŞME
-    // ═══════════════════════════════════════════════════════
-    void HandleHealing()
-    {
-        if (Input.GetKeyDown(KeyCode.H) && HP < maxHP)
-        {
-            animator.SetBool("IsHealing", true);
-            Invoke(nameof(StopHealing), 2f);
-        }
-    }
-
-    void StopHealing()
-    {
-        HP = Mathf.Clamp(HP + 30f, 0f, maxHP);
-        animator.SetBool("IsHealing", false);
-    }
-
-    // ═══════════════════════════════════════════════════════
-    //  HASAR
-    // ═══════════════════════════════════════════════════════
-    public void TakeHit(float damage)
-    {
-        if (isDead || isKnockedDown) return;
-        HP = Mathf.Clamp(HP - damage, 0f, maxHP);
-        if (HP <= 0f) { Die(); return; }
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayHurt();
-        animator.SetTrigger("IsHit");
-    }
-
-    void GetUp()
-    {
-        isKnockedDown = false;
-        animator.SetTrigger("GettingUp");
-    }
-
-    void Die()
-    {
-        if (isDead) return;
-        isDead = true;
-        animator.SetBool("IsDead", true);
-        controller.enabled = false;
-        if (AudioManager.Instance != null) AudioManager.Instance.PlayDeath();
-        Debug.Log("<color=red>OYUNCU ÖLDÜ!</color>");
-    }
-
-    // ═══════════════════════════════════════════════════════
-    //  DIŞ ÇAĞRILAR
-    // ═══════════════════════════════════════════════════════
-    public void Heal(float amount)
-        => HP = Mathf.Clamp(HP + amount, 0f, maxHP);
-
-    public void RestoreStamina(float amount)
-        => Stamina = Mathf.Clamp(Stamina + amount, 0f, maxStamina);
-
-    public void BoostSpeed(float duration)
-        => StartCoroutine(SpeedRoutine(3f, duration));
-
-    IEnumerator SpeedRoutine(float bonus, float duration)
-    {
-        walkSpeed += bonus;
-        runSpeed  += bonus;
-        staminaInfinite = true;
-
-        yield return new WaitForSeconds(duration);
-
-        walkSpeed -= bonus;
-        runSpeed  -= bonus;
-        staminaInfinite = false;
     }
 }

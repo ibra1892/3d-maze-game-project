@@ -36,6 +36,9 @@ public class DoorController : MonoBehaviour
             // Oyuncu doğrudan bu kapıya bakmıyorsa açma
             if (!IsFacingDoor()) return;
 
+            // Oyuncu ile kapı arasında duvar veya başka bir kapı varsa açma
+            if (!HasClearLineToDoor()) return;
+
             if (!isOpen)
             {
                 lastInteractionFrame = Time.frameCount;
@@ -86,6 +89,59 @@ public class DoorController : MonoBehaviour
 
         float angle = Vector3.Angle(forward, toDoor);
         return angle <= 60f; // 60 derecelik rahat bakış açısı
+    }
+
+    // Oyuncudan kapıya bir ışın atılır; ışın kapıdan önce başka bir şeye (duvar, başka kapı) çarparsa
+    // kapı "görünmüyor" sayılır. Böylece ince bir duvarın arkasındaki kapı açılamaz.
+    private static readonly RaycastHit[] rayHits = new RaycastHit[16];
+
+    private bool HasClearLineToDoor()
+    {
+        if (playerTransform == null) return true;
+
+        // Kapının sınırlarını yalnızca katı collider'lardan al. Oyuncu E'ye basarken zaten tetikleyici
+        // alanın içinde olduğundan, tetikleyici de hesaba katılırsa kontrol hiçbir şeyi engellemez.
+        Collider[] colliders = GetComponentsInChildren<Collider>();
+        bool hasBounds = false;
+        Bounds doorBounds = new Bounds();
+        foreach (Collider col in colliders)
+        {
+            if (col.isTrigger || !col.enabled) continue;
+            if (!hasBounds) { doorBounds = col.bounds; hasBounds = true; }
+            else doorBounds.Encapsulate(col.bounds);
+        }
+        if (!hasBounds) return true;
+
+        Vector3 origin = playerTransform.position + Vector3.up * 1.2f;
+        Vector3 targetPoint = doorBounds.ClosestPoint(origin);
+        Vector3 dir = targetPoint - origin;
+        float dist = dir.magnitude;
+        if (dist < 0.05f) return true;
+
+        int count = Physics.RaycastNonAlloc(origin, dir / dist, rayHits, dist + 0.3f, ~0, QueryTriggerInteraction.Ignore);
+
+        // Işının kapıya çarptığı en yakın mesafe
+        float doorHitDistance = dist + 0.3f;
+        for (int i = 0; i < count; i++)
+        {
+            if (BelongsTo(rayHits[i].transform, transform) && rayHits[i].distance < doorHitDistance)
+                doorHitDistance = rayHits[i].distance;
+        }
+
+        // Kapıdan önce oyuncu dışında bir şeye çarpıyorsa arada engel vardır
+        for (int i = 0; i < count; i++)
+        {
+            Transform t = rayHits[i].transform;
+            if (BelongsTo(t, transform) || BelongsTo(t, playerTransform.root)) continue;
+            if (rayHits[i].distance < doorHitDistance - 0.02f) return false;
+        }
+
+        return true;
+    }
+
+    private static bool BelongsTo(Transform t, Transform root)
+    {
+        return t == root || t.IsChildOf(root);
     }
 
     private void OnTriggerEnter(Collider other)

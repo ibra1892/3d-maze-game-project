@@ -1,4 +1,7 @@
+using System;
+using System.Collections;
 using UnityEngine;
+using UnityEngine.Networking;
 using TMPro; // Ekrana TextMeshPro ile yazı yazabilmek için gerekli
 using UnityEngine.SceneManagement;
 
@@ -45,6 +48,22 @@ public class GameResultManager : MonoBehaviour
     private float remainingTime;
     private bool isTimerRunning = false;
     private bool isGameCompleted = false;
+
+    // Sonuç sunucuya yalnızca bir kez gönderilir (kazanma veya süre bitimi, hangisi önce olursa)
+    private bool resultSubmitted = false;
+
+    // Sunucudaki POST /api/rooms/<kod>/scores ucunun beklediği JSON. Alan adları JSON ile birebir aynı olmalı.
+    [Serializable]
+    private class ScoreRequest
+    {
+        public int duration_seconds;
+        public int solved_question_count;
+        public int total_question_count;
+        public bool won;
+        public float score;
+        public int failed_attempts;
+        public int hints_used;
+    }
 
     private void Awake()
     {
@@ -185,6 +204,99 @@ public class GameResultManager : MonoBehaviour
 
             exitMessagePanel.SetActive(true);
         }
+
+        // 6. Sonucu öğretmen paneline ve liderlik tablosuna kaydet
+        SubmitResult(false, exitMessageText);
+    }
+
+    // --- RESULT SUBMISSION ---
+
+    // Oyun bitince (kazanma veya süre dolması) çağrılır. Skoru ve ölçütleri sunucuya gönderir.
+    // statusText verilirse, sonuç panelinin altına "kaydedildi / kaydedilemedi" satırı eklenir.
+    public void SubmitResult(bool won, TextMeshProUGUI statusText)
+    {
+        if (resultSubmitted) return;
+        resultSubmitted = true;
+
+        QuestionManager qm = QuestionManager.instance;
+        if (qm == null || string.IsNullOrEmpty(qm.RoomCode))
+        {
+            Debug.LogWarning("[GameResultManager] Odaya bağlı değil, sonuç gönderilmedi.");
+            return;
+        }
+
+        if (!GameSession.IsLoggedIn)
+        {
+            Debug.LogWarning("[GameResultManager] Öğrenci girişi yok (sahne menüsüz başlatıldı), sonuç gönderilmedi.");
+            AppendStatus(statusText, "Giriş yapılmadığı için sonuç kaydedilmedi.", true);
+            return;
+        }
+
+        float elapsed = Mathf.Clamp(totalTimeInSeconds - remainingTime, 0f, totalTimeInSeconds);
+
+        ScoreRequest payload = new ScoreRequest
+        {
+            duration_seconds = Mathf.RoundToInt(elapsed),
+            solved_question_count = correctAnswersCount,
+            total_question_count = qm.TotalDoorCount,
+            won = won,
+            score = Mathf.Round(CalculateFinalScore() * 10f) / 10f, // ekrandaki gibi tek ondalık
+            failed_attempts = failedAttempts,
+            hints_used = hintsUsed
+        };
+
+        string url = qm.serverUrl.TrimEnd('/') + "/api/rooms/" + UnityWebRequest.EscapeURL(qm.RoomCode) + "/scores";
+        StartCoroutine(SubmitResultRoutine(url, JsonUtility.ToJson(payload), statusText));
+    }
+
+    private IEnumerator SubmitResultRoutine(string url, string json, TextMeshProUGUI statusText)
+    {
+        AppendStatus(statusText, "Sonuç kaydediliyor...", false);
+
+        // Oyun bittiğinde Time.timeScale = 0 olsa da web isteği normal şekilde tamamlanır.
+        using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
+        {
+            request.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.SetRequestHeader("Authorization", "Bearer " + GameSession.Token);
+            request.timeout = 15;
+
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log("[GameResultManager] Sonuç kaydedildi: " + json);
+                AppendStatus(statusText, "Sonucun öğretmenine iletildi.", false);
+            }
+            else
+            {
+                Debug.LogWarning($"[GameResultManager] Sonuç gönderilemedi ({request.responseCode}): {request.error} {request.downloadHandler?.text}");
+                string reason = request.responseCode == 0 ? "sunucuya ulaşılamadı"
+                              : request.responseCode == 401 ? "oturumun süresi dolmuş, tekrar giriş yap"
+                              : "sunucu kabul etmedi";
+                AppendStatus(statusText, "Sonuç kaydedilemedi (" + reason + ").", true);
+            }
+        }
+    }
+
+    // Sonuç paneline durum satırı ekler; önceki durum satırının yerine yazar.
+    private TextMeshProUGUI statusTarget;
+    private string statusBaseText;
+
+    private void AppendStatus(TextMeshProUGUI target, string message, bool isError)
+    {
+        if (target == null) return;
+
+        // Panel metni ilk kez değiştirilirken orijinal hali saklanır, sonraki durumlar onun altına yazılır
+        if (target != statusTarget)
+        {
+            statusTarget = target;
+            statusBaseText = target.text;
+        }
+
+        string color = isError ? "#800000" : "#2C4A1C";
+        target.text = statusBaseText + "\n\n<size=70%><color=" + color + ">" + message + "</color></size>";
     }
 
     // --- SETUP & REGISTRATION ---
