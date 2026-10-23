@@ -9,7 +9,7 @@ using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// Builds the whole menu UI from code, so the scene only needs one empty GameObject with this script.
+// Labirent ve Ortaçağ Temasına Uyarlanmış Ana Menü
 public class MainMenu : MonoBehaviour
 {
     [Header("Server")]
@@ -18,9 +18,19 @@ public class MainMenu : MonoBehaviour
     [Header("Scenes")]
     public string gameSceneName = "SampleScene";
 
+    [Header("Tematik Görsel & Font Varlıkları (Opsiyonel)")]
+    [Tooltip("Oyun içi parşömen görseli (ExitMessagePanel'de kullanılan sprite)")]
+    public Sprite parchmentPanelSprite;
+    [Tooltip("Ahşap veya taş buton sprite'ı")]
+    public Sprite buttonWoodSprite;
+    [Tooltip("İnput alanı için parşömen/şerit sprite'ı")]
+    public Sprite inputFieldSprite;
+    [Tooltip("Ortaçağ / Gotik TextMeshPro Fontu")]
+    public TMP_FontAsset themeFont;
+
     private const string TokenPrefsKey = "maze_student_token";
 
-    // JSON shapes used by the server. Field names must match the JSON exactly.
+    // JSON modelleri (Orijinal yapıya dokunulmadı)
     [Serializable] public class LoginRequest { public string email; public string password; }
     [Serializable] public class StudentInfo { public string first_name; public string last_name; public string email; }
     [Serializable] public class AuthResponse { public string token; public StudentInfo student; }
@@ -45,17 +55,18 @@ public class MainMenu : MonoBehaviour
         public LeaderboardEntry[] entries;
     }
 
-    // Colors
-    private static readonly Color BackgroundColor = new Color32(23, 40, 44, 255);
-    private static readonly Color PanelColor = new Color32(31, 58, 63, 255);
-    private static readonly Color AccentColor = new Color32(15, 107, 107, 255);
-    private static readonly Color QuietColor = new Color32(56, 84, 89, 255);
-    private static readonly Color KeyColor = new Color32(227, 167, 47, 255);
-    private static readonly Color InputColor = new Color32(241, 245, 244, 255);
-    private static readonly Color InkColor = new Color32(23, 40, 44, 255);
-    private static readonly Color PlaceholderColor = new Color32(110, 125, 125, 255);
-    private static readonly Color MutedTextColor = new Color32(168, 187, 184, 255);
-    private static readonly Color ErrorTextColor = new Color32(255, 140, 130, 255);
+    // --- ORTAÇAĞ / LABİRENT RENK PALETİ ---
+    private static readonly Color BackgroundColor = new Color32(18, 14, 12, 255);       // Zindan karanlığı / Koyu taş
+    private static readonly Color ParchmentColor = new Color32(232, 218, 192, 255);     // Yıpranmış açık parşömen
+    private static readonly Color HeaderMaroonColor = new Color32(120, 28, 28, 255);    // Koyu Bordo / Mühür kırmızısı
+    private static readonly Color WoodButtonColor = new Color32(62, 36, 20, 255);       // Koyu Meşe Ahşap Buton
+    private static readonly Color GoldAccentColor = new Color32(205, 155, 45, 255);     // Antik Varak Altın
+    private static readonly Color PapyrusInputColor = new Color32(245, 237, 220, 255);  // Açık papirüs giriş kutusu
+    private static readonly Color InkColor = new Color32(35, 22, 14, 255);              // Koyu Mürekkep Kahvesi
+    private static readonly Color PlaceholderColor = new Color32(130, 110, 95, 255);    // Soluk Mürekkep
+    private static readonly Color MutedTextColor = new Color32(95, 68, 50, 255);        // Eskitme Sepya Metin
+    private static readonly Color ErrorTextColor = new Color32(165, 30, 30, 255);       // Uyarı Kırmızısı
+    private static readonly Color ButtonTextLight = new Color32(248, 238, 218, 255);    // Ahşap üstü kemik/altın yazı
 
     private Transform canvasTransform;
     private GameObject loginPanel;
@@ -83,7 +94,6 @@ public class MainMenu : MonoBehaviour
     {
         GameSession.ServerUrl = serverUrl.TrimEnd('/');
 
-        // The game scene can leave the cursor locked and time paused.
         Time.timeScale = 1;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
@@ -117,7 +127,7 @@ public class MainMenu : MonoBehaviour
 
         if (email.Length == 0 || password.Length == 0)
         {
-            SetMessage(loginMessage, "Enter your email and password.", true);
+            SetMessage(loginMessage, "E-posta ve şifrenizi giriniz.", true);
             return;
         }
 
@@ -127,7 +137,7 @@ public class MainMenu : MonoBehaviour
     private IEnumerator LoginRoutine(string email, string password)
     {
         busy = true;
-        SetMessage(loginMessage, "Logging in...", false);
+        SetMessage(loginMessage, "Giriş yapılıyor...", false);
 
         string json = JsonUtility.ToJson(new LoginRequest { email = email, password = password });
 
@@ -142,23 +152,22 @@ public class MainMenu : MonoBehaviour
             }
             else if (status == 0)
             {
-                SetMessage(loginMessage, "Could not reach the server.", true);
+                SetMessage(loginMessage, "Sunucuya bağlanılamadı.", true);
             }
             else
             {
-                SetMessage(loginMessage, ExtractError(body, "Login failed."), true);
+                SetMessage(loginMessage, ExtractError(body, "Giriş başarısız."), true);
             }
         }));
 
         busy = false;
     }
 
-    // On start-up: check that the login saved on this computer is still valid.
     private IEnumerator RestoreLoginRoutine(string savedToken)
     {
         busy = true;
         ShowPanel(loginPanel);
-        SetMessage(loginMessage, "Checking saved login...", false);
+        SetMessage(loginMessage, "Oturum kontrol ediliyor...", false);
 
         yield return StartCoroutine(SendRequest("GET", "/api/students/me", null, savedToken, (status, body) =>
         {
@@ -171,14 +180,13 @@ public class MainMenu : MonoBehaviour
             else
             {
                 if (status == 401) PlayerPrefs.DeleteKey(TokenPrefsKey);
-                SetMessage(loginMessage, status == 0 ? "Could not reach the server." : "", status == 0);
+                SetMessage(loginMessage, status == 0 ? "Sunucuya ulaşılamadı." : "", status == 0);
             }
         }));
 
         busy = false;
     }
 
-    // Switches the password field between dots and readable text.
     private void TogglePasswordVisibility()
     {
         SetPasswordVisible(!passwordVisible);
@@ -189,7 +197,7 @@ public class MainMenu : MonoBehaviour
         passwordVisible = visible;
         passwordInput.contentType = visible ? TMP_InputField.ContentType.Standard : TMP_InputField.ContentType.Password;
         passwordInput.ForceLabelUpdate();
-        showPasswordLabel.text = visible ? "Hide" : "Show";
+        showPasswordLabel.text = visible ? "Gizle" : "Göster";
     }
 
     private void SignIn(string token, StudentInfo student)
@@ -202,7 +210,7 @@ public class MainMenu : MonoBehaviour
         PlayerPrefs.SetString(TokenPrefsKey, token);
         PlayerPrefs.Save();
 
-        welcomeLabel.text = "Welcome, " + GameSession.PlayerName;
+        welcomeLabel.text = "Hoş Geldin, " + GameSession.PlayerName;
         SetMessage(menuMessage, "", false);
         ShowPanel(menuPanel);
     }
@@ -228,7 +236,7 @@ public class MainMenu : MonoBehaviour
         string code = roomCodeInput.text.Trim().ToUpperInvariant();
         if (code.Length == 0)
         {
-            SetMessage(menuMessage, "Enter a room code.", true);
+            SetMessage(menuMessage, "Lütfen bir oda anahtarı giriniz.", true);
             return;
         }
 
@@ -238,7 +246,7 @@ public class MainMenu : MonoBehaviour
     private IEnumerator StartGameRoutine(string code)
     {
         busy = true;
-        SetMessage(menuMessage, "Joining room...", false);
+        SetMessage(menuMessage, "Zindana giriliyor...", false);
 
         bool canStart = false;
         string path = "/api/rooms/" + UnityWebRequest.EscapeURL(code) + "/questions";
@@ -254,20 +262,20 @@ public class MainMenu : MonoBehaviour
                 }
                 else
                 {
-                    SetMessage(menuMessage, "This room has no questions yet.", true);
+                    SetMessage(menuMessage, "Bu odada henüz soru hazırlanmamış.", true);
                 }
             }
             else if (status == 404)
             {
-                SetMessage(menuMessage, "Room not found. Check the code and try again.", true);
+                SetMessage(menuMessage, "Geçit bulunamadı. Kodu kontrol ediniz.", true);
             }
             else if (status == 0)
             {
-                SetMessage(menuMessage, "Could not reach the server.", true);
+                SetMessage(menuMessage, "Sunucuya ulaşılamadı.", true);
             }
             else
             {
-                SetMessage(menuMessage, ExtractError(body, "Could not join the room."), true);
+                SetMessage(menuMessage, ExtractError(body, "Odaya katılınamadı."), true);
             }
         }));
 
@@ -287,7 +295,7 @@ public class MainMenu : MonoBehaviour
         string code = roomCodeInput.text.Trim().ToUpperInvariant();
         if (code.Length == 0)
         {
-            SetMessage(menuMessage, "Enter a room code to see its leaderboard.", true);
+            SetMessage(menuMessage, "Sıralama için oda kodunu giriniz.", true);
             return;
         }
 
@@ -297,7 +305,7 @@ public class MainMenu : MonoBehaviour
     private IEnumerator LeaderboardRoutine(string code)
     {
         busy = true;
-        SetMessage(menuMessage, "Loading leaderboard...", false);
+        SetMessage(menuMessage, "Şeref kütüğü yükleniyor...", false);
 
         string path = "/api/rooms/" + UnityWebRequest.EscapeURL(code) + "/leaderboard";
 
@@ -306,22 +314,22 @@ public class MainMenu : MonoBehaviour
             if (status == 200)
             {
                 LeaderboardResponse response = JsonUtility.FromJson<LeaderboardResponse>(body);
-                leaderboardTitle.text = "Leaderboard  -  " + code;
+                leaderboardTitle.text = "<b>ŞEREF KÜTÜĞÜ</b>\n<size=70%><color=#5F4432>Oda: " + code + "</color></size>";
                 leaderboardBody.text = BuildLeaderboardText(response.entries);
                 SetMessage(menuMessage, "", false);
                 ShowPanel(leaderboardPanel);
             }
             else if (status == 404)
             {
-                SetMessage(menuMessage, "Room not found. Check the code and try again.", true);
+                SetMessage(menuMessage, "Oda bulunamadı.", true);
             }
             else if (status == 0)
             {
-                SetMessage(menuMessage, "Could not reach the server.", true);
+                SetMessage(menuMessage, "Sunucuya bağlanılamadı.", true);
             }
             else
             {
-                SetMessage(menuMessage, ExtractError(body, "Could not load the leaderboard."), true);
+                SetMessage(menuMessage, ExtractError(body, "Sıralama alınamadı."), true);
             }
         }));
 
@@ -332,28 +340,34 @@ public class MainMenu : MonoBehaviour
     {
         if (entries == null || entries.Length == 0)
         {
-            return "No results yet for this room.";
+            return "<color=#5F4432>Bu labirenti henüz tamamlayan olmadı.</color>";
         }
 
         StringBuilder text = new StringBuilder();
-        text.AppendLine("<b>#<pos=9%>Player<pos=60%>Solved<pos=76%>Time<pos=91%>Exit</b>");
+        text.AppendLine("<color=#781C1C><b>#<pos=9%>Kâşif<pos=60%>Çözülen<pos=76%>Süre<pos=91%>Kaçış</b></color>");
 
         int shown = Mathf.Min(entries.Length, 10);
         for (int i = 0; i < shown; i++)
         {
             LeaderboardEntry entry = entries[i];
-
-            // Remove < and > so a name can never inject formatting tags.
             string name = entry.player_name.Replace("<", "").Replace(">", "");
             if (name.Length > 18) name = name.Substring(0, 16) + "...";
 
             string time = (entry.duration_seconds / 60) + ":" + (entry.duration_seconds % 60).ToString("00");
 
+            string rankColor = entry.rank switch
+            {
+                1 => "<color=#C59B27><b>#1</b></color>",
+                2 => "<color=#8C8C8C><b>#2</b></color>",
+                3 => "<color=#A6652C><b>#3</b></color>",
+                _ => $"#{entry.rank}"
+            };
+
             text.AppendLine(
-                entry.rank + "<pos=9%>" + name +
+                rankColor + "<pos=9%>" + name +
                 "<pos=60%>" + entry.solved_question_count + "/" + entry.total_question_count +
                 "<pos=76%>" + time +
-                "<pos=91%>" + (entry.won ? "Yes" : "No"));
+                "<pos=91%>" + (entry.won ? "<color=#2E6B34>Evet</color>" : "<color=#8B261D>Hayır</color>"));
         }
 
         return text.ToString();
@@ -364,7 +378,6 @@ public class MainMenu : MonoBehaviour
         Application.OpenURL(GameSession.ServerUrl);
     }
 
-    // The #reset part makes the website open the password reset form directly.
     private void OpenPasswordResetPage()
     {
         Application.OpenURL(GameSession.ServerUrl + "/#reset");
@@ -372,7 +385,6 @@ public class MainMenu : MonoBehaviour
 
     // ------------------------------------------------------------ networking
 
-    // Sends a request and reports (status code, response text). Status 0 means the server could not be reached.
     private IEnumerator SendRequest(string method, string path, string jsonBody, string token, Action<long, string> onDone)
     {
         using (UnityWebRequest request = new UnityWebRequest(GameSession.ServerUrl + path, method))
@@ -408,10 +420,7 @@ public class MainMenu : MonoBehaviour
             ErrorResponse error = JsonUtility.FromJson<ErrorResponse>(body);
             if (error != null && !string.IsNullOrEmpty(error.error)) return error.error;
         }
-        catch (ArgumentException)
-        {
-            // The body was not JSON, use the fallback.
-        }
+        catch (ArgumentException) { }
         return fallback;
     }
 
@@ -455,18 +464,19 @@ public class MainMenu : MonoBehaviour
 
         canvasTransform = canvasObject.transform;
 
-        // Full-screen background
+        // Arka plan: Karanlık zindan fonu
         RectTransform background = NewRect("Background", canvasTransform);
         Stretch(background, 0, 0);
-        background.gameObject.AddComponent<Image>().color = BackgroundColor;
+        Image bgImg = background.gameObject.AddComponent<Image>();
+        bgImg.color = BackgroundColor;
 
-        // Game title
-        TextMeshProUGUI title = CreateLabel(canvasTransform, "MAZE QUIZ", 96, TextAlignmentOptions.Center, KeyColor, FontStyles.Bold);
+        // Başlık: Altın Varak Görünüm
+        TextMeshProUGUI title = CreateLabel(canvasTransform, "LABİRENT KAÇIŞI", 88, TextAlignmentOptions.Center, GoldAccentColor, FontStyles.Bold);
         RectTransform titleRect = title.rectTransform;
         titleRect.anchorMin = new Vector2(0.5f, 1f);
         titleRect.anchorMax = new Vector2(0.5f, 1f);
         titleRect.pivot = new Vector2(0.5f, 1f);
-        titleRect.anchoredPosition = new Vector2(0, -50);
+        titleRect.anchoredPosition = new Vector2(0, -60);
         titleRect.sizeDelta = new Vector2(1200, 120);
 
         BuildLoginPanel();
@@ -479,34 +489,34 @@ public class MainMenu : MonoBehaviour
         loginPanel = CreatePanel("LoginPanel");
         Transform panel = loginPanel.transform;
 
-        CreateLabel(panel, "Log in", 44, TextAlignmentOptions.Center, Color.white, FontStyles.Bold);
+        CreateLabel(panel, "GİRİŞ YAP", 42, TextAlignmentOptions.Center, HeaderMaroonColor, FontStyles.Bold);
 
-        emailInput = CreateInput(panel, "Email", TMP_InputField.ContentType.EmailAddress);
-        // Password field with a Show/Hide button next to it
+        emailInput = CreateInput(panel, "E-posta Adresi", TMP_InputField.ContentType.EmailAddress);
+
         GameObject passwordRow = new GameObject("PasswordRow", typeof(RectTransform), typeof(HorizontalLayoutGroup));
         passwordRow.transform.SetParent(panel, false);
-        SetPreferredHeight(passwordRow, 68);
+        SetPreferredHeight(passwordRow, 64);
 
         HorizontalLayoutGroup rowLayout = passwordRow.GetComponent<HorizontalLayoutGroup>();
-        rowLayout.spacing = 12;
+        rowLayout.spacing = 10;
         rowLayout.childControlWidth = true;
         rowLayout.childControlHeight = true;
         rowLayout.childForceExpandWidth = false;
         rowLayout.childForceExpandHeight = true;
 
-        passwordInput = CreateInput(passwordRow.transform, "Password", TMP_InputField.ContentType.Password);
+        passwordInput = CreateInput(passwordRow.transform, "Şifre", TMP_InputField.ContentType.Password);
         passwordInput.GetComponent<LayoutElement>().flexibleWidth = 1;
         passwordInput.onSubmit.AddListener(_ => Login());
 
-        Button showPasswordButton = CreateButton(passwordRow.transform, "Show", QuietColor, Color.white, TogglePasswordVisibility);
-        showPasswordButton.GetComponent<LayoutElement>().preferredWidth = 150;
+        Button showPasswordButton = CreateButton(passwordRow.transform, "Göster", WoodButtonColor, ButtonTextLight, TogglePasswordVisibility);
+        showPasswordButton.GetComponent<LayoutElement>().preferredWidth = 130;
         showPasswordLabel = showPasswordButton.GetComponentInChildren<TextMeshProUGUI>();
 
         loginMessage = CreateMessageLabel(panel);
 
-        CreateButton(panel, "Log in", AccentColor, Color.white, Login);
-        CreateButton(panel, "Create account (opens website)", QuietColor, Color.white, OpenTeacherPage);
-        CreateButton(panel, "Forgot password? (opens website)", QuietColor, Color.white, OpenPasswordResetPage);
+        CreateButton(panel, "Giriş Yap", GoldAccentColor, InkColor, Login);
+        CreateButton(panel, "Kayıt Ol (Web Sitesi)", WoodButtonColor, ButtonTextLight, OpenTeacherPage);
+        CreateButton(panel, "Şifremi Unuttum", WoodButtonColor, ButtonTextLight, OpenPasswordResetPage);
     }
 
     private void BuildMenuPanel()
@@ -514,18 +524,18 @@ public class MainMenu : MonoBehaviour
         menuPanel = CreatePanel("MenuPanel");
         Transform panel = menuPanel.transform;
 
-        welcomeLabel = CreateLabel(panel, "Welcome", 40, TextAlignmentOptions.Center, Color.white, FontStyles.Bold);
+        welcomeLabel = CreateLabel(panel, "Hoş Geldin Kâşif", 38, TextAlignmentOptions.Center, HeaderMaroonColor, FontStyles.Bold);
 
-        roomCodeInput = CreateInput(panel, "Room code", TMP_InputField.ContentType.Alphanumeric);
+        roomCodeInput = CreateInput(panel, "Oda Anahtarı / Kodu", TMP_InputField.ContentType.Alphanumeric);
         roomCodeInput.characterLimit = 6;
         roomCodeInput.onSubmit.AddListener(_ => StartGame());
 
         menuMessage = CreateMessageLabel(panel);
 
-        CreateButton(panel, "Start", KeyColor, InkColor, StartGame);
-        CreateButton(panel, "Leaderboard", AccentColor, Color.white, ShowLeaderboard);
-        CreateButton(panel, "Teacher Login", AccentColor, Color.white, OpenTeacherPage);
-        CreateButton(panel, "Log out", QuietColor, Color.white, LogOut);
+        CreateButton(panel, "Labirente Gir", GoldAccentColor, InkColor, StartGame);
+        CreateButton(panel, "Şeref Kütüğü (Sıralama)", WoodButtonColor, ButtonTextLight, ShowLeaderboard);
+        CreateButton(panel, "Öğretmen Paneli", WoodButtonColor, ButtonTextLight, OpenTeacherPage);
+        CreateButton(panel, "Çıkış Yap", new Color32(45, 30, 22, 255), new Color32(190, 175, 160, 255), LogOut);
     }
 
     private void BuildLeaderboardPanel()
@@ -533,10 +543,10 @@ public class MainMenu : MonoBehaviour
         leaderboardPanel = CreatePanel("LeaderboardPanel");
         Transform panel = leaderboardPanel.transform;
 
-        leaderboardTitle = CreateLabel(panel, "Leaderboard", 40, TextAlignmentOptions.Center, Color.white, FontStyles.Bold);
-        leaderboardBody = CreateLabel(panel, "", 24, TextAlignmentOptions.Left, Color.white);
+        leaderboardTitle = CreateLabel(panel, "ŞEREF KÜTÜĞÜ", 38, TextAlignmentOptions.Center, HeaderMaroonColor, FontStyles.Bold);
+        leaderboardBody = CreateLabel(panel, "", 24, TextAlignmentOptions.Left, InkColor);
 
-        CreateButton(panel, "Back", QuietColor, Color.white, () => ShowPanel(menuPanel));
+        CreateButton(panel, "Geri Dön", WoodButtonColor, ButtonTextLight, () => ShowPanel(menuPanel));
     }
 
     // ------------------------------------------------------------ UI helpers
@@ -579,14 +589,24 @@ public class MainMenu : MonoBehaviour
         rect.anchorMin = new Vector2(0.5f, 0.5f);
         rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = new Vector2(0, -70);
+        rect.anchoredPosition = new Vector2(0, -60);
         rect.sizeDelta = new Vector2(760, 100);
 
-        panel.GetComponent<Image>().color = PanelColor;
+        Image img = panel.GetComponent<Image>();
+        if (parchmentPanelSprite != null)
+        {
+            img.sprite = parchmentPanelSprite;
+            img.type = Image.Type.Sliced;
+            img.color = Color.white;
+        }
+        else
+        {
+            img.color = ParchmentColor;
+        }
 
         VerticalLayoutGroup layout = panel.GetComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset(48, 48, 40, 40);
-        layout.spacing = 18;
+        layout.spacing = 16;
         layout.childAlignment = TextAnchor.UpperCenter;
         layout.childControlWidth = true;
         layout.childControlHeight = true;
@@ -607,6 +627,7 @@ public class MainMenu : MonoBehaviour
         go.transform.SetParent(parent, false);
 
         TextMeshProUGUI label = go.GetComponent<TextMeshProUGUI>();
+        if (themeFont != null) label.font = themeFont;
         label.text = text;
         label.fontSize = size;
         label.alignment = alignment;
@@ -618,8 +639,8 @@ public class MainMenu : MonoBehaviour
 
     private TextMeshProUGUI CreateMessageLabel(Transform parent)
     {
-        TextMeshProUGUI label = CreateLabel(parent, "", 26, TextAlignmentOptions.Center, MutedTextColor);
-        SetMinHeight(label.gameObject, 36);
+        TextMeshProUGUI label = CreateLabel(parent, "", 24, TextAlignmentOptions.Center, MutedTextColor);
+        SetMinHeight(label.gameObject, 32);
         return label;
     }
 
@@ -627,16 +648,32 @@ public class MainMenu : MonoBehaviour
     {
         GameObject go = new GameObject(text + " Button", typeof(RectTransform), typeof(Image), typeof(Button));
         go.transform.SetParent(parent, false);
-        SetPreferredHeight(go, 68);
+        SetPreferredHeight(go, 64);
 
         Image image = go.GetComponent<Image>();
-        image.color = backgroundColor;
+        if (buttonWoodSprite != null)
+        {
+            image.sprite = buttonWoodSprite;
+            image.type = Image.Type.Sliced;
+            image.color = Color.white;
+        }
+        else
+        {
+            image.color = backgroundColor;
+        }
 
         Button button = go.GetComponent<Button>();
         button.targetGraphic = image;
         button.onClick.AddListener(onClick);
 
-        TextMeshProUGUI label = CreateLabel(go.transform, text, 30, TextAlignmentOptions.Center, textColor, FontStyles.Bold);
+        // Hover ve tıklama efektleri
+        ColorBlock colors = button.colors;
+        colors.normalColor = image.color;
+        colors.highlightedColor = new Color(image.color.r * 1.15f, image.color.g * 1.15f, image.color.b * 1.15f);
+        colors.pressedColor = new Color(image.color.r * 0.8f, image.color.g * 0.8f, image.color.b * 0.8f);
+        button.colors = colors;
+
+        TextMeshProUGUI label = CreateLabel(go.transform, text, 28, TextAlignmentOptions.Center, textColor, FontStyles.Bold);
         Stretch(label.rectTransform, 10, 0);
 
         return button;
@@ -646,23 +683,30 @@ public class MainMenu : MonoBehaviour
     {
         GameObject root = new GameObject(placeholderText + " Input", typeof(RectTransform), typeof(Image));
         root.transform.SetParent(parent, false);
-        SetPreferredHeight(root, 68);
+        SetPreferredHeight(root, 64);
 
         Image background = root.GetComponent<Image>();
-        background.color = InputColor;
+        if (inputFieldSprite != null)
+        {
+            background.sprite = inputFieldSprite;
+            background.type = Image.Type.Sliced;
+            background.color = Color.white;
+        }
+        else
+        {
+            background.color = PapyrusInputColor;
+        }
 
-        // The text area clips the text to the box
         RectTransform area = NewRect("Text Area", root.transform);
         area.gameObject.AddComponent<RectMask2D>();
         Stretch(area, 20, 8);
 
-        TextMeshProUGUI placeholder = CreateLabel(area, placeholderText, 30, TextAlignmentOptions.Left, PlaceholderColor, FontStyles.Italic);
+        TextMeshProUGUI placeholder = CreateLabel(area, placeholderText, 28, TextAlignmentOptions.Left, PlaceholderColor, FontStyles.Italic);
         Stretch(placeholder.rectTransform, 0, 0);
 
-        TextMeshProUGUI text = CreateLabel(area, "", 30, TextAlignmentOptions.Left, InkColor);
+        TextMeshProUGUI text = CreateLabel(area, "", 28, TextAlignmentOptions.Left, InkColor);
         Stretch(text.rectTransform, 0, 0);
 
-        // Add the input component last, after the children it needs exist
         root.SetActive(false);
         TMP_InputField input = root.AddComponent<TMP_InputField>();
         input.textViewport = area;
