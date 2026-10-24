@@ -3,8 +3,10 @@ using UnityEngine.Networking;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 using TMPro;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 [System.Serializable]
@@ -241,7 +243,7 @@ public class QuestionManager : MonoBehaviour
         }
         else
         {
-            int randomIndex = Random.Range(0, remainingQuestions.Count);
+            int randomIndex = UnityEngine.Random.Range(0, remainingQuestions.Count);
             activeQuestion = remainingQuestions[randomIndex];
             assignedDoorQuestions[door] = activeQuestion;
         }
@@ -284,7 +286,7 @@ public class QuestionManager : MonoBehaviour
             }
 
             activeQuestion = null;
-            ResetDoorDrawer(); // Kapı çekmecesini yerine sok
+            ResetDoorDrawer();
 
             if (hintPanel != null) hintPanel.SetActive(false);
             questionPanel.SetActive(false);
@@ -316,7 +318,7 @@ public class QuestionManager : MonoBehaviour
         }
     }
 
-    // --- HINT & ABANDON (ÇEKMECE VE FLAMA ENTEGRASYONU) ---
+    // --- HINT & ABANDON ---
 
     public void AbandonQuestion()
     {
@@ -337,13 +339,11 @@ public class QuestionManager : MonoBehaviour
     {
         if (hintPanel == null || hintText == null) return;
 
-        // Çekmece açılma ve parşömen sesi
         if (AudioManager.Instance != null)
         {
             AudioManager.Instance.PlayPaperOpen();
         }
 
-        // Soru parşömenini anında gizle ki flama ile üst üste binmesin
         if (questionPanel != null) questionPanel.SetActive(false);
 
         string hintContent = (activeQuestion != null && !string.IsNullOrWhiteSpace(activeQuestion.hint))
@@ -357,7 +357,6 @@ public class QuestionManager : MonoBehaviour
             GameResultManager.Instance.RecordHintUsed();
         }
 
-        // Kapının kendisinden, alt objelerinden veya üst objelerinden güvenli arama
         DoorHintDrawer drawer = null;
         if (currentDoor != null)
         {
@@ -426,7 +425,17 @@ public class QuestionManager : MonoBehaviour
         return GameResultManager.QuestionDifficulty.Easy;
     }
 
-    // --- ESNEK METİN TEMİZLEME VE TOLERANSLI LEVENSHTEIN ---
+    // --- CEVAP KONTROLÜ (SAYISAL AYRIŞTIRMA + LEVENSHTEIN) ---
+
+    // Metinden nokta/virgül karmaşasını çözerek sayı ayrıştıran yardımcı fonksiyon
+    private bool TryParseNumber(string text, out double value)
+    {
+        value = 0;
+        if (string.IsNullOrWhiteSpace(text)) return false;
+
+        string s = text.Trim().Replace(',', '.');
+        return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+    }
 
     private string CleanText(string text)
     {
@@ -434,11 +443,9 @@ public class QuestionManager : MonoBehaviour
 
         string cleaned = text.Trim();
 
-        // 1. Büyük İ ve I tuzaklarını baştan çöz
         cleaned = cleaned.Replace("İ", "i").Replace("I", "i");
         cleaned = cleaned.ToLowerInvariant();
 
-        // 2. Türkçe karakterleri eşitle
         cleaned = cleaned.Replace('ı', 'i')
                          .Replace('ğ', 'g')
                          .Replace('ü', 'u')
@@ -446,10 +453,8 @@ public class QuestionManager : MonoBehaviour
                          .Replace('ö', 'o')
                          .Replace('ç', 'c');
 
-        // 3. Sayı formatlarını koru (12.5 veya 12,5)
         cleaned = Regex.Replace(cleaned, @"(?<=\d)\.(?=\d)", ",");
 
-        // 4. Parantez, tırnak, ünlem, soru işareti vb. sembolleri temizle
         cleaned = Regex.Replace(cleaned, @"[\{\}\[\]\(\)]", "");
         cleaned = Regex.Replace(cleaned, @"['""!?;:]", "");
         cleaned = Regex.Replace(cleaned, @"\.(?!\d)", "");
@@ -460,19 +465,38 @@ public class QuestionManager : MonoBehaviour
 
     private bool IsAnswerCorrect(string playerText, string correctText)
     {
-        if (string.IsNullOrEmpty(playerText) || string.IsNullOrEmpty(correctText)) return false;
+        if (string.IsNullOrWhiteSpace(playerText) || string.IsNullOrWhiteSpace(correctText)) return false;
 
-        string cleanedPlayer = CleanText(playerText);
         string[] alternatives = correctText.Split('|');
 
         foreach (string alternative in alternatives)
         {
+            if (string.IsNullOrWhiteSpace(alternative)) continue;
+
+            // 1. KONTROL: SAYISAL CEVAP KİLİDİ
+            // Eğer veritabanındaki hedef cevap bir sayı ise (3.1417, 3.25 vb.)
+            if (TryParseNumber(alternative, out double targetNum))
+            {
+                if (TryParseNumber(playerText, out double playerNum))
+                {
+                    // Sayısal değerler 0.0001 hassasiyetle birebir eşit mi?
+                    if (Math.Abs(playerNum - targetNum) < 0.0001)
+                        return true;
+                }
+
+                // Hedef cevap sayıysa Levenshtein ve Contains ASLA ÇALIŞMAZ!
+                // Böylece 3.25 beklerken 3.29 giren oyuncu doğrudan elenir.
+                continue;
+            }
+
+            // 2. KONTROL: METİNSEL CEVAP (Pisagor, Hipotenüs vb. kelimeler için typo toleransı)
+            string cleanedPlayer = CleanText(playerText);
             string cleanedTarget = CleanText(alternative);
 
-            // 1. Tam eşleşme
+            // 2.1 Tam eşleşme
             if (cleanedPlayer == cleanedTarget) return true;
 
-            // 2. Kapsama kontrolü
+            // 2.2 Kapsama kontrolü
             if (cleanedPlayer.Length >= 4 && cleanedTarget.Length >= 4)
             {
                 if (cleanedPlayer.Contains(cleanedTarget) || cleanedTarget.Contains(cleanedPlayer))
@@ -482,6 +506,7 @@ public class QuestionManager : MonoBehaviour
                 }
             }
 
+            // 2.3 Levenshtein benzerlik kontrolü
             int distance = LevenshteinDistance(cleanedPlayer, cleanedTarget);
             int maxLength = Mathf.Max(cleanedPlayer.Length, cleanedTarget.Length);
 
