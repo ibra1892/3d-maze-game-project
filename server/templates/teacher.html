@@ -3,200 +3,341 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Maze Quiz – Teacher panel</title>
+  <title>Maze Quiz – Teacher Panel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Atkinson+Hyperlegible+Mono:wght@600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Cinzel:wght@600;700&family=Atkinson+Hyperlegible+Mono:wght@600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #EEF2F1;
-      --surface: #FFFFFF;
-      --ink: #17282C;
-      --muted: #5B6E72;
-      --line: #D3DDDB;
-      --accent: #0F6B6B;
-      --key: #E3A72F;
-      --danger: #B3362B;
+      --parchment-border: #C89F38;
+      --ink: #26160C;
+      --ink-muted: #6B4E38;
+      --gold: #D4AF37;
+      --gold-bright: #F3CA52;
+      --maroon: #731616;
+      --wood: #4A2814;
+      --danger: #8B1E16;
+      --danger-hover: #A6251B;
+      --input-bg: rgba(253, 248, 237, 0.92);
       --radius: 8px;
     }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      background: var(--bg);
+      background-color: #0d0907;
+      background-image: 
+        radial-gradient(circle at 12% 18%, rgba(255, 140, 35, 0.24) 0%, transparent 40%),
+        radial-gradient(circle at 88% 18%, rgba(255, 140, 35, 0.24) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(10, 6, 4, 0.35) 0%, rgba(10, 6, 4, 0.85) 100%),
+        url('/static/mossy_sandstone_diff_4k.jpg');
+      background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+      background-size: auto, auto, auto, 540px;
+      background-attachment: fixed;
       color: var(--ink);
-      font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
-      font-size: 17px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 16px;
       line-height: 1.5;
+      min-height: 100vh;
     }
+
     [hidden] { display: none !important; }
     button, input, select, textarea { font: inherit; color: inherit; }
-    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
     .topbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 24px; background: var(--ink); color: #fff;
+      padding: 14px 28px;
+      background: #18100C url('/static/mossy_sandstone_diff_4k.jpg') center/cover;
+      border-bottom: 2px solid var(--gold);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.85);
+      color: var(--gold-bright);
+      position: relative;
     }
-    .topbar h1 { margin: 0; font-size: 1.15rem; }
+    .topbar::before {
+      content: ""; position: absolute; inset: 0;
+      background: rgba(18, 12, 8, 0.88);
+      pointer-events: none;
+    }
+    .topbar h1, .topbar #user-button { position: relative; z-index: 1; }
+    .topbar h1 {
+      margin: 0;
+      font-family: "MedievalSharp", cursive;
+      font-size: 1.45rem;
+      letter-spacing: 1.2px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+    }
 
-    .signin { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 48px 16px; }
-    .auth-card {
-      width: 100%; max-width: 420px; background: var(--surface);
-      border: 1px solid var(--line); border-radius: var(--radius); padding: 24px;
+    .signin {
+      display: flex; flex-direction: column; align-items: center; gap: 18px;
+      padding: 48px 16px;
     }
-    .role-buttons { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
-    .show-password { display: flex; align-items: center; gap: 8px; font-weight: 400; margin-bottom: 14px; cursor: pointer; }
-    .show-password input { width: auto; }
-    .helper { color: var(--muted); font-size: .9rem; margin: 4px 0 0; }
-    #student-message, #reset-message { min-height: 1.5em; margin: 12px 0 0; font-weight: 700; color: var(--accent); }
+    .auth-card {
+      width: 100%; max-width: 440px;
+      background: #F4E8CE url('/static/parsomen_1.jpg') center/cover no-repeat;
+      border: 2px solid var(--parchment-border);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: 
+        0 14px 40px rgba(0, 0, 0, 0.85),
+        inset 0 0 45px rgba(90, 50, 20, 0.28),
+        0 0 0 1px #8C6819;
+    }
+    .auth-card h2 {
+      font-family: "MedievalSharp", cursive;
+      color: var(--maroon);
+      font-size: 1.5rem;
+      margin-top: 0;
+      text-align: center;
+      border-bottom: 1px dashed var(--parchment-border);
+      padding-bottom: 8px;
+    }
+    .role-buttons { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+    .show-password {
+      display: flex; align-items: center; gap: 8px; font-weight: 500;
+      margin-bottom: 14px; cursor: pointer; color: var(--ink-muted);
+    }
+    .show-password input { width: auto; accent-color: var(--maroon); }
+    .helper { color: var(--ink-muted); font-size: .88rem; margin: 4px 0 0; font-style: italic; }
+    #student-message, #reset-message { min-height: 1.5em; margin: 12px 0 0; font-weight: 700; color: var(--maroon); }
     #student-message.error, #reset-message.error { color: var(--danger); }
 
     .layout {
-      display: grid; grid-template-columns: 280px 1fr; gap: 24px;
-      max-width: 1100px; margin: 24px auto; padding: 0 16px;
+      display: grid; grid-template-columns: 290px 1fr; gap: 24px;
+      max-width: 1140px; margin: 28px auto; padding: 0 16px;
     }
     @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
 
-    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
-    .panel + .panel { margin-top: 20px; }
-    h2 { margin: 0 0 12px; font-size: 1.15rem; }
-
-    label { display: block; font-weight: 700; margin-bottom: 4px; }
-    input, select, textarea {
-      width: 100%; padding: 9px 11px; background: #fff;
-      border: 1px solid #A9B9B6; border-radius: 6px;
+    .panel {
+      background: #F4E8CE url('/static/parsomen_1.jpg') center/cover no-repeat;
+      border: 2px solid var(--parchment-border);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: 
+        0 12px 35px rgba(0, 0, 0, 0.8),
+        inset 0 0 40px rgba(90, 50, 20, 0.25),
+        0 0 0 1px #8C6819;
     }
-    textarea { min-height: 84px; resize: vertical; }
+    .panel + .panel { margin-top: 22px; }
+    h2 {
+      margin: 0 0 14px;
+      font-family: "MedievalSharp", cursive;
+      font-size: 1.35rem;
+      color: var(--maroon);
+      border-bottom: 1px solid rgba(139, 90, 43, 0.25);
+      padding-bottom: 6px;
+    }
+
+    label { display: block; font-weight: 700; margin-bottom: 5px; color: var(--ink); font-size: 0.95rem; }
+    input, select, textarea {
+      width: 100%; padding: 10px 12px;
+      background: var(--input-bg);
+      border: 1px solid #BA9B72;
+      border-radius: 6px;
+      color: var(--ink);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--gold);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.08), 0 0 6px rgba(212, 175, 55, 0.4);
+      outline: none;
+    }
+    textarea { min-height: 88px; resize: vertical; }
     .field { margin-bottom: 14px; }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
 
     .btn {
-      display: inline-block; padding: 9px 16px; border: 0; border-radius: 6px;
-      background: var(--accent); color: #fff; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 22px; border: 0;
+      background: url('/static/menuButton_3-removebg-preview.png') no-repeat center / 100% 100%;
+      color: #26160C;
+      font-family: "MedievalSharp", cursive; font-size: 1.05rem; font-weight: bold;
+      letter-spacing: 0.6px; cursor: pointer; min-height: 48px;
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,0.45));
+      transition: transform 0.1s ease, filter 0.15s ease;
     }
-    .btn:hover { background: #0B5555; }
-    .btn.quiet { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
-    .btn.quiet:hover { background: #E4F0EF; }
-    .btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; }
+    .btn:hover {
+      transform: translateY(-1px) scale(1.02);
+      filter: drop-shadow(0 5px 10px rgba(0,0,0,0.55)) brightness(1.05);
+    }
+    .btn:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .btn.quiet {
+      background: transparent; color: var(--wood);
+      border: 1px solid #8C5A2B; filter: none; min-height: auto;
+      padding: 8px 16px; border-radius: 6px;
+    }
+    .btn.quiet:hover {
+      background: rgba(139, 90, 43, 0.16); color: var(--maroon); border-color: var(--maroon);
+      transform: none; filter: none;
+    }
+
+    .btn.danger {
+      background: var(--danger); color: #FFF; border: 1px solid #5C120D;
+      filter: none; padding: 6px 14px; font-size: 0.95rem; min-height: auto;
+      border-radius: 6px;
+    }
+    .btn.danger:hover {
+      background: var(--danger-hover); transform: none; filter: none;
+    }
 
     .room-list { list-style: none; margin: 16px 0 0; padding: 0; }
     .room-list button {
-      width: 100%; text-align: left; padding: 9px 11px; margin-bottom: 6px;
-      background: #fff; border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
-      font-family: "Atkinson Hyperlegible Mono", ui-monospace, monospace; font-weight: 600; letter-spacing: .08em;
+      width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 8px;
+      background: rgba(230, 212, 176, 0.85); border: 1px solid #BA9B72; border-radius: 6px;
+      cursor: pointer; font-family: "MedievalSharp", cursive; font-size: 1.15rem;
+      letter-spacing: 0.1em; color: var(--ink);
+      transition: all 0.15s;
     }
-    .room-list button[aria-current="true"] { border-color: var(--accent); background: #E4F0EF; }
+    .room-list button:hover { background: #EFE3C7; border-color: var(--gold); }
+    .room-list button[aria-current="true"] {
+      border-color: #7D560F; background: var(--gold);
+      color: #1A0F05; font-weight: bold;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.18);
+    }
 
-    /* The one memorable element: the room code as a brass key tag. */
     .key-tag {
       display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-      padding: 18px 22px; border-radius: var(--radius);
-      background: var(--key); color: #2A1E00;
+      padding: 20px 24px; border-radius: var(--radius);
+      background: linear-gradient(135deg, #ECC765 0%, #D4AF37 45%, #9E7418 100%);
+      color: #1A0E06; border: 2px solid #6E4909;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(255, 255, 255, 0.35);
+      margin-bottom: 22px;
     }
     .key-tag .code {
-      font-family: "Atkinson Hyperlegible Mono", ui-monospace, monospace;
-      font-weight: 600; font-size: 2.6rem; letter-spacing: .18em; line-height: 1;
+      font-family: "MedievalSharp", cursive;
+      font-weight: 700; font-size: 2.8rem; letter-spacing: .18em; line-height: 1;
+      text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.5);
     }
-    .key-tag .meta { margin: 0; }
-    .key-tag .btn { margin-left: auto; background: #2A1E00; }
+    .key-tag .meta { margin: 0; font-weight: 600; color: #2C170A; }
+    .key-tag .btn {
+      margin-left: auto;
+    }
 
     .questions { list-style: none; margin: 0; padding: 0; }
-    .questions li { padding: 12px 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; }
+    .questions li {
+      padding: 14px 0; border-top: 1px dashed #C2A478;
+      display: grid; grid-template-columns: 1fr auto; gap: 6px 12px;
+    }
     .questions li:first-child { border-top: 0; }
-    .questions .answer, .questions .hint { color: var(--muted); margin: 0; grid-column: 1; }
-    .badge { font-size: .85rem; font-weight: 700; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); margin-right: 8px; }
-    .badge.easy { background: #E1F1E4; } .badge.medium { background: #FBF0D2; } .badge.hard { background: #F6DAD6; }
+    .questions .answer, .questions .hint { color: var(--ink-muted); margin: 0; grid-column: 1; font-size: 0.93rem; }
+    
+    .badge {
+      font-family: "MedievalSharp", cursive; font-size: .88rem; font-weight: 700;
+      padding: 2px 10px; border-radius: 99px; margin-right: 8px; text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge.easy { background: #D9EAD5; color: #1E4F18; border: 1px solid #7FA878; }
+    .badge.medium { background: #F8EDC9; color: #614606; border: 1px solid #D6B255; }
+    .badge.hard { background: #F7D4CF; color: #731A12; border: 1px solid #C97266; }
 
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th {
+      font-family: "MedievalSharp", cursive; font-size: 1.05rem;
+      text-align: left; padding: 10px 10px;
+      color: var(--maroon); border-bottom: 2px solid var(--parchment-border);
+    }
+    td {
+      text-align: left; padding: 9px 10px;
+      border-bottom: 1px solid #CFC0A3;
+      color: var(--ink);
+    }
+    tr:hover td { background: rgba(139, 90, 43, 0.08); }
     .table-wrap { overflow-x: auto; }
 
-    .empty { color: var(--muted); margin: 0; }
-    #message { min-height: 1.5em; margin: 12px 0 0; font-weight: 700; color: var(--accent); }
+    .empty { color: var(--ink-muted); margin: 0; font-style: italic; }
+    #message { min-height: 1.5em; margin: 12px 0 0; font-weight: 700; color: var(--maroon); }
     #message.error { color: var(--danger); }
+    a { color: var(--maroon); font-weight: 600; text-decoration: none; }
+    a:hover { text-decoration: underline; color: #8F1F1F; }
   </style>
 </head>
 <body>
   <header class="topbar">
-    <h1>Maze Quiz · Teacher panel</h1>
+    <h1>MAZE QUIZ · ÖĞRETMEN PORTALI</h1>
     <div id="user-button"></div>
   </header>
 
   <main>
     <section id="signed-out" class="signin" hidden>
       <div id="role-choice" class="auth-card">
-        <h2>Who are you?</h2>
-        <p class="empty">Teachers manage rooms and questions on this page. Students create an account here, then play in the game.</p>
+        <h2>KİMSİNİZ?</h2>
+        <p class="empty">Öğretmenler bu sayfada odaları ve soruları yönetir. Öğrenciler buradan hesap oluşturup oyunda giriş yapabilir.</p>
         <div class="role-buttons">
-          <button id="choose-teacher" class="btn" type="button">I'm a teacher</button>
-          <button id="choose-student" class="btn quiet" type="button">I'm a student</button>
+          <button id="choose-teacher" class="btn" type="button">Öğretmen Girişi</button>
+          <button id="choose-student" class="btn quiet" type="button">Öğrenci Kaydı</button>
         </div>
       </div>
 
       <div id="teacher-auth" hidden>
-        <p><button class="btn quiet back" type="button">← Back</button></p>
+        <p><button class="btn quiet back" type="button">← Geri Dön</button></p>
         <div id="sign-in"></div>
       </div>
 
       <div id="student-auth" class="auth-card" hidden>
-        <p><button class="btn quiet back" type="button">← Back</button></p>
-        <h2>Create a student account</h2>
+        <p><button class="btn quiet back" type="button">← Geri Dön</button></p>
+        <h2>Öğrenci Hesabı Oluştur</h2>
         <form id="student-form">
           <div class="row">
             <div class="field">
-              <label for="student-first-name">First name</label>
+              <label for="student-first-name">Ad</label>
               <input id="student-first-name" name="first_name" required maxlength="40">
             </div>
             <div class="field">
-              <label for="student-last-name">Last name</label>
+              <label for="student-last-name">Soyad</label>
               <input id="student-last-name" name="last_name" required maxlength="40">
             </div>
           </div>
           <div class="field">
-            <label for="student-email">Email</label>
+            <label for="student-email">E-posta</label>
             <input id="student-email" name="email" type="email" required>
           </div>
           <div class="field">
-            <label for="student-password">Password (at least 8 characters)</label>
+            <label for="student-password">Şifre (en az 8 karakter)</label>
             <input id="student-password" name="password" type="password" required minlength="8" maxlength="128">
           </div>
           <div class="field">
-            <label for="student-password-confirm">Repeat password</label>
+            <label for="student-password-confirm">Şifre Tekrarı</label>
             <input id="student-password-confirm" name="password_confirm" type="password" required minlength="8" maxlength="128">
           </div>
-          <label class="show-password"><input id="show-student-password" type="checkbox"> Show passwords</label>
-          <button class="btn" type="submit">Create account</button>
+          <label class="show-password"><input id="show-student-password" type="checkbox"> Şifreleri göster</label>
+          <button class="btn" type="submit">Hesap Oluştur</button>
         </form>
         <p id="student-message" role="status"></p>
-        <p class="empty">Already have an account? Log in inside the game.</p>
-        <p class="empty"><a href="#reset" id="open-reset">Forgot your password?</a></p>
+        <p class="empty" style="margin-top:12px;">Zaten bir hesabınız var mı? Oyunu açıp doğrudan giriş yapabilirsiniz.</p>
+        <p class="empty"><a href="#reset" id="open-reset">Şifrenizi mi unuttunuz?</a></p>
       </div>
 
       <div id="reset-auth" class="auth-card" hidden>
-        <p><button class="btn quiet back" type="button">← Back</button></p>
-        <h2>Reset your password</h2>
-        <p class="empty">Enter your email and press "Send code". Then type the code from the email and choose a new password.</p>
+        <p><button class="btn quiet back" type="button">← Geri Dön</button></p>
+        <h2>Şifrenizi Sıfırlayın</h2>
+        <p class="empty">E-posta adresinizi girip "Kod Gönder"e tıklayın. Ardından gelen kodu yazıp yeni şifrenizi belirleyin.</p>
         <div class="field">
-          <label for="reset-email">Email</label>
+          <label for="reset-email">E-posta</label>
           <input id="reset-email" type="email" autocomplete="email">
         </div>
-        <p><button id="send-reset-code" class="btn quiet" type="button">Send code</button></p>
+        <p><button id="send-reset-code" class="btn quiet" type="button">Kod Gönder</button></p>
 
         <form id="reset-form">
           <div class="field">
-            <label for="reset-code">Code from the email</label>
+            <label for="reset-code">E-postadaki Onay Kodu</label>
             <input id="reset-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required>
           </div>
           <div class="field">
-            <label for="reset-password">New password (at least 8 characters)</label>
+            <label for="reset-password">Yeni Şifre (en az 8 karakter)</label>
             <input id="reset-password" type="password" required minlength="8" maxlength="128">
           </div>
           <div class="field">
-            <label for="reset-password-confirm">Repeat new password</label>
+            <label for="reset-password-confirm">Yeni Şifre Tekrarı</label>
             <input id="reset-password-confirm" type="password" required minlength="8" maxlength="128">
           </div>
-          <label class="show-password"><input id="show-reset-password" type="checkbox"> Show passwords</label>
-          <button class="btn" type="submit">Change password</button>
+          <label class="show-password"><input id="show-reset-password" type="checkbox"> Şifreleri göster</label>
+          <button class="btn" type="submit">Şifreyi Değiştir</button>
         </form>
         <p id="reset-message" role="status"></p>
       </div>
@@ -205,21 +346,21 @@
     <div id="signed-in" class="layout" hidden>
       <aside>
         <div class="panel">
-          <h2>Your rooms</h2>
+          <h2>Odalarınız</h2>
           <div class="row">
             <div class="field">
-              <label for="duration">Minutes</label>
+              <label for="duration">Süre (Dk)</label>
               <input id="duration" type="number" min="1" max="180" value="15">
             </div>
             <div class="field">
-              <label for="question-count">Questions</label>
-              <input id="question-count" type="number" min="1" max="20" value="5" title="Between 1 and 20 questions">
+              <label for="question-count">Soru Sayısı</label>
+              <input id="question-count" type="number" min="1" max="20" value="5" title="1 ila 20 soru arası">
             </div>
           </div>
-          <p class="empty" style="font-size:.9rem; margin-bottom:12px;">A room holds 1 to 20 questions.</p>
-          <button id="create-room" class="btn" type="button">Create room</button>
+          <p class="empty" style="font-size:.88rem; margin-bottom:12px;">Bir oda 1 ila 20 soru barındırabilir.</p>
+          <button id="create-room" class="btn" type="button">Yeni Oda Kur</button>
           <ul id="room-list" class="room-list"></ul>
-          <p id="no-rooms" class="empty" hidden>No rooms yet. Create one to get a room code.</p>
+          <p id="no-rooms" class="empty" hidden>Henüz oda bulunmuyor. Bir tane kurup kod alın.</p>
         </div>
       </aside>
 
@@ -227,63 +368,72 @@
         <div class="key-tag">
           <span id="room-code" class="code"></span>
           <p id="room-meta" class="meta"></p>
-          <button id="copy-code" class="btn" type="button">Copy code</button>
+          <button id="copy-code" class="btn" type="button">Kodu Kopyala</button>
         </div>
 
         <div class="panel">
-          <h2>Add a question</h2>
+          <h2>Yeni Soru Ekle</h2>
           <form id="question-form">
             <div class="field">
-              <label for="question_text">Question</label>
-              <textarea id="question_text" name="question_text" required></textarea>
+              <label for="question_text">Soru Metni</label>
+              <textarea id="question_text" name="question_text" required placeholder="Soruyu buraya yazınız..."></textarea>
             </div>
             <div class="row">
               <div class="field">
-                <label for="correct_answer">Correct answer(s)</label>
-                <input id="correct_answer" name="correct_answer" required placeholder="e.g. 20, twenty">
-                <p class="helper">Separate several accepted answers with commas.</p>
+                <label for="correct_answer">Doğru Cevap(lar)</label>
+                <input id="correct_answer" name="correct_answer" required placeholder="örn: 20 veya 3.14">
+                <p class="helper">Birden fazla cevabı aralarına virgül koyarak yazabilirsiniz.</p>
               </div>
               <div class="field">
-                <label for="difficulty">Difficulty</label>
+                <label for="difficulty">Zorluk Seviyesi</label>
                 <select id="difficulty" name="difficulty">
-                  <option value="easy">Easy</option>
-                  <option value="medium" selected>Medium</option>
-                  <option value="hard">Hard</option>
+                  <option value="easy">Kolay</option>
+                  <option value="medium" selected>Orta</option>
+                  <option value="hard">Zor</option>
                 </select>
               </div>
             </div>
             <div class="field">
-              <label for="hint">Hint (shown from the book in the maze)</label>
-              <input id="hint" name="hint">
+              <label for="hint">İpucu (Labirentteki çekmeceden çıkar)</label>
+              <input id="hint" name="hint" placeholder="İpucu metni...">
             </div>
-            <button class="btn" type="submit">Save question</button>
+            <button class="btn" type="submit">Soruyu Kaydet</button>
           </form>
           <p id="message" role="status"></p>
         </div>
 
         <div class="panel">
-          <h2>Questions in this room</h2>
+          <h2>Bu Odadaki Sorular</h2>
           <ul id="question-list" class="questions"></ul>
-          <p id="no-questions" class="empty" hidden>No questions yet. Add the first one above.</p>
+          <p id="no-questions" class="empty" hidden>Henüz soru eklenmedi. Yukarıdan ilk soruyu ekleyin.</p>
         </div>
 
         <div class="panel">
-          <h2>Results</h2>
+          <h2>Sonuçlar ve Sıralama</h2>
           <div class="table-wrap">
             <table id="score-table" hidden>
               <thead>
-                <tr><th>Player</th><th>Score</th><th>Solved</th><th>Wrong</th><th>Hints</th><th>Time</th><th>Result</th><th>Finished</th></tr>
+                <tr>
+                  <th>Kâşif</th>
+                  <th>Skor</th>
+                  <th>Çözülen</th>
+                  <th>Hatalı</th>
+                  <th>İpucu</th>
+                  <th>Süre</th>
+                  <th>Durum</th>
+                  <th>Bitiş Zamanı</th>
+                </tr>
               </thead>
               <tbody id="score-list"></tbody>
             </table>
           </div>
-          <p id="no-scores" class="empty" hidden>No one has finished this room yet.</p>
+          <p id="no-scores" class="empty" hidden>Bu odayı henüz tamamlayan bir öğrenci olmadı.</p>
         </div>
 
         <div class="panel">
-          <h2>Delete room</h2>
-          <p class="empty">Deleting a room also deletes its questions and results. This cannot be undone.</p>
-          <p><button id="delete-room" class="btn danger" type="button">Delete this room</button></p>
+          <h2>Odayı Kapat ve Sil</h2>
+          <p class="empty">Odayı silmek sorularını ve tüm öğrenci sonuçlarını kalıcı olarak siler.</p>
+          <p><button id="delete-room" class="btn danger" type="button">Bu Odayı Sil</button></p>
         </div>
       </section>
     </div>
@@ -299,7 +449,7 @@
         else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
         else node.setAttribute(key, value);
       }
-      node.append(...children); // strings become text nodes, so teacher input is never parsed as HTML
+      node.append(...children);
       return node;
     }
 
@@ -337,7 +487,6 @@
       $("#signed-out").hidden = signedIn;
       $("#signed-in").hidden = !signedIn;
       if (!signedIn) {
-        // The game opens the page with #reset to go straight to the password reset form
         showAuthView(location.hash === "#reset" ? "reset" : "choice");
         return;
       }
@@ -349,7 +498,6 @@
       await loadRooms();
     }
 
-    // view is "choice", "teacher" or "student"
     let signInMounted = false;
 
     function showAuthView(view) {
@@ -393,17 +541,17 @@
       const data = await api(`/api/rooms/${selectedCode}/questions`);
       const count = data.questions.length;
       const isFull = count >= data.question_count;
-      $("#room-meta").textContent = `${data.duration_minutes} minutes · ${count} of ${data.question_count} questions added`;
+      $("#room-meta").textContent = `${data.duration_minutes} dakika · ${data.question_count} sorudan ${count} tanesi hazırlandı`;
       $("#question-form button[type=submit]").disabled = isFull;
-      if (isFull) showMessage("This room is full. Delete a question to add another.");
+      if (isFull) showMessage("Bu oda tamamen doldu. Başka eklemek için bir soruyu siliniz.");
       $("#no-questions").hidden = count > 0;
       $("#question-list").replaceChildren(
         ...data.questions.map((q) =>
           el("li", {},
             el("div", {}, el("span", { class: `badge ${q.difficulty}` }, q.difficulty), q.question_text),
-            el("button", { class: "btn danger", type: "button", onclick: () => deleteQuestion(q.id) }, "Delete"),
-            el("p", { class: "answer" }, `Answer: ${q.correct_answer.split("|").join(" or ")}`),
-            q.hint ? el("p", { class: "hint" }, `Hint: ${q.hint}`) : ""
+            el("button", { class: "btn danger", type: "button", onclick: () => deleteQuestion(q.id) }, "Sil"),
+            el("p", { class: "answer" }, `Doğru Cevap: ${q.correct_answer.split("|").join(" veya ")}`),
+            q.hint ? el("p", { class: "hint" }, `İpucu: ${q.hint}`) : ""
           )
         )
       );
@@ -424,7 +572,7 @@
             el("td", {}, s.failed_attempts ?? "–"),
             el("td", {}, s.hints_used ?? "–"),
             el("td", {}, `${minutes}:${seconds}`),
-            el("td", {}, s.won ? "Escaped" : "Did not escape"),
+            el("td", {}, s.won ? "Kaçtı" : "Kaçamadı"),
             el("td", {}, new Date(s.completed_at).toLocaleString())
           );
         })
@@ -432,7 +580,7 @@
     }
 
     async function deleteQuestion(id) {
-      if (!confirm("Delete this question?")) return;
+      if (!confirm("Bu soruyu silmek istediğinize emin misiniz?")) return;
       try {
         await api(`/api/rooms/${selectedCode}/questions/${id}`, { method: "DELETE" });
         await loadQuestions();
@@ -490,13 +638,13 @@
     $("#send-reset-code").addEventListener("click", async () => {
       const email = $("#reset-email").value.trim();
       if (!email) {
-        showResetMessage("Enter your email first.", true);
+        showResetMessage("Lütfen önce e-posta adresinizi giriniz.", true);
         return;
       }
-      showResetMessage("Sending...", false);
+      showResetMessage("Kod gönderiliyor...", false);
       try {
         const { ok, body } = await postJson("/api/students/forgot-password", { email });
-        showResetMessage(ok ? body.message : body.error || "Something went wrong.", !ok);
+        showResetMessage(ok ? body.message : body.error || "Bir sorun oluştu.", !ok);
       } catch (err) {
         showResetMessage(err.message, true);
       }
@@ -512,7 +660,7 @@
       event.preventDefault();
       const password = $("#reset-password").value;
       if (password !== $("#reset-password-confirm").value) {
-        showResetMessage("The two passwords do not match.", true);
+        showResetMessage("Şifreler birbiriyle eşleşmiyor.", true);
         return;
       }
       try {
@@ -526,9 +674,9 @@
           event.target.reset();
           $("#reset-password").type = "password";
           $("#reset-password-confirm").type = "password";
-          showResetMessage(body.message + " Open the game and log in.", false);
+          showResetMessage(body.message + " Oyunu açıp giriş yapabilirsiniz.", false);
         } else {
-          showResetMessage(body.error || "Something went wrong.", true);
+          showResetMessage(body.error || "Bir sorun oluştu.", true);
         }
       } catch (err) {
         showResetMessage(err.message, true);
@@ -549,7 +697,7 @@
       message.textContent = "";
       if ($("#student-password").value !== $("#student-password-confirm").value) {
         message.className = "error";
-        message.textContent = "The two passwords do not match.";
+        message.textContent = "Şifreler birbiriyle eşleşmiyor.";
         return;
       }
       try {
@@ -564,8 +712,8 @@
         $("#student-password").type = "password";
         $("#student-password-confirm").type = "password";
         message.textContent =
-          `Account created for ${body.student.first_name} ${body.student.last_name}. ` +
-          `Open the game and log in with ${body.student.email}.`;
+          `${body.student.first_name} ${body.student.last_name} adına hesap açıldı. ` +
+          `Oyunu açıp ${body.student.email} ile giriş yapabilirsiniz.`;
       } catch (err) {
         message.className = "error";
         message.textContent = err.message;
@@ -574,7 +722,7 @@
 
     $("#delete-room").addEventListener("click", async () => {
       const code = selectedCode;
-      if (!confirm(`Delete room ${code}? Its questions and results will be deleted too.`)) return;
+      if (!confirm(`Oda ${code} silinsin mi? Soruları ve sıralama sonuçları da silinecektir.`)) return;
       try {
         await api(`/api/rooms/${code}`, { method: "DELETE" });
         rooms = rooms.filter((room) => room.room_code !== code);
@@ -589,8 +737,8 @@
 
     $("#copy-code").addEventListener("click", async () => {
       await navigator.clipboard.writeText(selectedCode);
-      $("#copy-code").textContent = "Copied";
-      setTimeout(() => ($("#copy-code").textContent = "Copy code"), 1500);
+      $("#copy-code").textContent = "Kopyalandı!";
+      setTimeout(() => ($("#copy-code").textContent = "Kodu Kopyala"), 1500);
     });
 
     $("#question-form").addEventListener("submit", async (event) => {
@@ -602,7 +750,7 @@
           body: JSON.stringify(Object.fromEntries(new FormData(form))),
         });
         form.reset();
-        showMessage("Question saved.");
+        showMessage("Soru başarıyla kaydedildi.");
         await loadQuestions();
       } catch (err) {
         showMessage(err.message, true);
