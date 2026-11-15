@@ -1,11 +1,13 @@
 import base64
 import hashlib
 import hmac
+import json
 import os
 import re
 import secrets
 import smtplib
 import threading
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from functools import wraps
@@ -14,7 +16,10 @@ import jwt
 import requests
 from dotenv import load_dotenv
 from flask import Flask, g, jsonify, render_template, request
+from google import genai
+from google.genai import types
 from postgrest.exceptions import APIError
+from pydantic import BaseModel
 from supabase import create_client
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -25,6 +30,8 @@ SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]  # server only, never 
 CLERK_PUBLISHABLE_KEY = os.environ["CLERK_PUBLISHABLE_KEY"]
 CLERK_SECRET_KEY = os.environ["CLERK_SECRET_KEY"]
 STUDENT_TOKEN_SECRET = os.environ["STUDENT_TOKEN_SECRET"]  # signs student login tokens
+GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
 
 # The Clerk "frontend API" domain is encoded inside the publishable key.
 CLERK_FRONTEND_API = (
@@ -33,6 +40,7 @@ CLERK_FRONTEND_API = (
 jwks_client = jwt.PyJWKClient(f"https://{CLERK_FRONTEND_API}/.well-known/jwks.json")
 
 db = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 app = Flask(__name__)
 
 # No 0/O, 1/I/L so codes are easy to read out loud in a classroom.
@@ -207,41 +215,18 @@ def get_room(room_code):
     return result.data[0] if result.data else None
 
 
-def split_answers(raw):
-    """Split "20, yirmi" into ["20", "yirmi"]. A "|" also separates answers.
-
-    A comma with a digit on both sides ("1,4" or "2, 3") stays inside the answer, because it is
-    part of a decimal number or a list such as a set. To give two numeric alternatives, use "|".
-    """
-    answers = []
-    start = 0
-    for index, character in enumerate(raw):
-        if character not in ",|":
-            continue
-        if character == ",":
-            before = raw[:index].rstrip()
-            after = raw[index + 1:].lstrip()
-            if before[-1:].isdigit() and after[:1].isdigit():
-                continue
-        answers.append(raw[start:index])
-        start = index + 1
-    answers.append(raw[start:])
-    return [answer.strip() for answer in answers if answer.strip()]
-
-
 def parse_question(data):
     question_text = (data.get("question_text") or "").strip()
-    # The game stores several accepted answers separated by "|" and checks each one.
-    answers = split_answers(data.get("correct_answer") or "")
+    correct_answer = (data.get("correct_answer") or "").strip()
     hint = (data.get("hint") or "").strip() or None
     difficulty = data.get("difficulty") or "medium"
-    if not question_text or not answers:
+    if not question_text or not correct_answer:
         raise ValueError("Question and correct answer are required.")
     if difficulty not in DIFFICULTIES:
         raise ValueError("Difficulty must be easy, medium or hard.")
     return {
         "question_text": question_text,
-        "correct_answer": "|".join(answers),
+        "correct_answer": correct_answer,
         "hint": hint,
         "difficulty": difficulty,
     }
@@ -562,7 +547,7 @@ def get_questions(room_code):
         return error("Room not found.", 404)
     result = (
         db.table("questions")
-        .select("id, question_text, correct_answer, hint, difficulty")
+        .select("id, question_text, hint, difficulty")
         .eq("room_code", room["room_code"])
         .order("id")
         .execute()
@@ -573,6 +558,132 @@ def get_questions(room_code):
             "duration_minutes": room["duration_minutes"],
             "question_count": room["question_count"],
             "questions": result.data,
+        }
+    )
+
+
+class EvaluationResult(BaseModel):
+    is_correct: bool
+    feedback: str
+
+
+EVALUATOR_SYSTEM_PROMPT = """
+Sen bir eğitici labirent oyununda öğrencilerin verdiği cevapları değerlendiren uzman bir sınav gözetmenisin.
+Sana soru metni, öğretmenin belirlediği referans cevap ve öğrencinin yazdığı cevap verilecek.
+
+Değerlendirme kuralları:
+1. Tek kelimelik veya kısa cevaplarda: Küçük yazım hatalarını, Türkçe karakter eksikliklerini ve büyük/küçük harf farklarını tolere et.
+2. Kod yazma sorularında: Değişken isimleri, boşluklar veya döngü tercihleri (for/while gibi) farklı olsa bile algoritma ve sözdizimi (syntax) mantıksal olarak doğruysa kabul et.
+3. Tanım ve yorum sorularında: Birebir ezber cümle arama; öğrenci temel kavramı ve ana fikri doğru açıkladıysa kabul et.
+4. Matematik sorularında: Sayısal olarak eşdeğer ifadeleri (örneğin 0.5 ile 1/2) doğru kabul et.
+5. Yanlış, eksik veya alakasız cevaplarda is_correct değerini false yap.
+
+Geri bildirim (feedback) kuralı:
+- Öğrenciye hitaben Türkçe, en fazla 1 kısa cümle yaz.
+- Cevap yanlışsa doğrudan cevabı söylemeden nerede hata yaptığını kısaca belirt.
+""".strip()
+
+_ai_executor = ThreadPoolExecutor(max_workers=4)
+
+
+def _normalize_text(text):
+    tr_map = str.maketrans("İIıŞşĞğÜüÖöÇç", "iiissgguuoocc")
+    cleaned = (text or "").strip().translate(tr_map).lower()
+    cleaned = re.sub(r"[^\w\s.,/-]", "", cleaned)
+    return re.sub(r"\s+", " ", cleaned).strip()
+
+
+def _ask_gemini(prompt):
+    response = gemini_client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=EVALUATOR_SYSTEM_PROMPT,
+            temperature=0.0,
+            max_output_tokens=100,
+            response_mime_type="application/json",
+            response_schema=EvaluationResult,
+        ),
+    )
+    return json.loads(response.text)
+
+
+def _fallback_check(norm_student, ref_answer):
+    alternatives = [alt.strip() for alt in ref_answer.split("|") if alt.strip()]
+    if not alternatives:
+        alternatives = [ref_answer]
+
+    for alt in alternatives:
+        norm_alt = _normalize_text(alt)
+        if not norm_alt:
+            continue
+        if norm_student == norm_alt:
+            return True
+        if re.search(rf"\b{re.escape(norm_alt)}\b", norm_student):
+            return True
+        if len(norm_alt) >= 4 and norm_alt in norm_student:
+            return True
+    return False
+
+
+@app.post("/api/evaluate")
+def evaluate_answer():
+    data = request.get_json(silent=True) or {}
+    question_id = to_int(data.get("question_id"), 1, 10**9)
+    student_answer = (data.get("student_answer") or "").strip()
+
+    if question_id is None:
+        return error("Valid question_id is required.")
+    if not student_answer:
+        return jsonify({"is_correct": False, "feedback": "Lütfen bir cevap yazın."})
+
+    result = (
+        db.table("questions")
+        .select("question_text, correct_answer")
+        .eq("id", question_id)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        return error("Question not found.", 404)
+
+    question = result.data[0]
+    ref_answer = (question["correct_answer"] or "").strip()
+    norm_student = _normalize_text(student_answer)
+
+    # 1. HIZLI YOL: Birebir eşleşme veya kısa cevapta referans kelime doğrudan geçiyorsa anında onayla (0.01 sn)
+    if norm_student and len(norm_student.split()) <= 5 and _fallback_check(norm_student, ref_answer):
+        return jsonify({"is_correct": True, "feedback": ""})
+
+    prompt = (
+        f"SORU:\n{question['question_text']}\n\n"
+        f"ÖĞRETMENİN REFERANS CEVABI:\n{ref_answer}\n\n"
+        f"ÖĞRENCİNİN CEVABI:\n{student_answer}"
+    )
+
+    # 2. YAPAY ZEKA YOLU: En fazla 2.5 saniye bekle
+    future = _ai_executor.submit(_ask_gemini, prompt)
+    try:
+        verdict = future.result(timeout=2.5)
+        return jsonify(
+            {
+                "is_correct": bool(verdict.get("is_correct", False)),
+                "feedback": str(verdict.get("feedback", "")).strip(),
+            }
+        )
+    except FuturesTimeout:
+        print("[GEMINI TIMEOUT] 2.5 saniye aşıldı, yedek kontrole geçiliyor.")
+    except Exception as exc:
+        print(f"[GEMINI ERROR] {exc}")
+
+    # 3. YEDEK KATMAN: Yapay zeka yoğun/yavaşsa oyuncuyu kilitlemeden yedek kontrol uygula
+    if _fallback_check(norm_student, ref_answer):
+        return jsonify({"is_correct": True, "feedback": ""})
+
+    return jsonify(
+        {
+            "is_correct": False,
+            "feedback": "Cevabını biraz daha net ve kısa yazarak tekrar dene.",
         }
     )
 

@@ -6,15 +6,13 @@ using TMPro;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Text.RegularExpressions;
+using System.Text;
 
 [System.Serializable]
 public class QuestionData
 {
     public int id;
     public string question_text;
-    public string correct_answer;
     public string hint;
     public string difficulty;
 }
@@ -26,6 +24,20 @@ public class RoomData
     public int duration_minutes;
     public int question_count;
     public QuestionData[] questions;
+}
+
+[System.Serializable]
+public class EvaluateRequest
+{
+    public int question_id;
+    public string student_answer;
+}
+
+[System.Serializable]
+public class EvaluateResponse
+{
+    public bool is_correct;
+    public string feedback;
 }
 
 public class QuestionManager : MonoBehaviour
@@ -61,6 +73,7 @@ public class QuestionManager : MonoBehaviour
     private QuestionData activeQuestion;
 
     private bool isRoomReady;
+    private bool isEvaluating;
     private int openedDoorCount;
     private int totalDoorCount = 1;
 
@@ -115,6 +128,8 @@ public class QuestionManager : MonoBehaviour
 
     void Update()
     {
+        if (isEvaluating) return;
+
         if (questionPanel.activeSelf || (hintPanel != null && hintPanel.activeSelf))
         {
             if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
@@ -205,7 +220,7 @@ public class QuestionManager : MonoBehaviour
 
     public void AskQuestion(GameObject door)
     {
-        if (questionPanel.activeSelf) return;
+        if (questionPanel.activeSelf || isEvaluating) return;
 
         if (!isRoomReady)
         {
@@ -252,69 +267,137 @@ public class QuestionManager : MonoBehaviour
 
         if (answerInput != null)
         {
+            answerInput.interactable = true;
             answerInput.text = "";
             answerInput.ActivateInputField();
+        }
+
+        if (submitButton != null)
+        {
+            submitButton.interactable = true;
         }
     }
 
     public void SubmitAnswer()
     {
-        if (activeQuestion == null) return;
+        if (isEvaluating || activeQuestion == null) return;
         if (answerInput == null || string.IsNullOrWhiteSpace(answerInput.text)) return;
 
-        string enteredAnswer = answerInput.text;
+        StartCoroutine(EvaluateAnswerRoutine(activeQuestion, answerInput.text.Trim()));
+    }
 
-        if (IsAnswerCorrect(enteredAnswer, activeQuestion.correct_answer))
+    private IEnumerator EvaluateAnswerRoutine(QuestionData question, string enteredAnswer)
+    {
+        isEvaluating = true;
+        if (submitButton != null) submitButton.interactable = false;
+        if (answerInput != null) answerInput.interactable = false;
+
+        questionText.text = "<i><color=#3A1F04>Yapay zeka cevabını değerlendiriyor...</color></i>\n\n" + question.question_text;
+
+        EvaluateRequest payload = new EvaluateRequest
         {
-            if (GameResultManager.Instance != null)
+            question_id = question.id,
+            student_answer = enteredAnswer
+        };
+
+        string url = serverUrl + "/api/evaluate";
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(JsonUtility.ToJson(payload));
+
+        using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
+        {
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.timeout = 10;
+
+            yield return request.SendWebRequest();
+
+            isEvaluating = false;
+            if (submitButton != null) submitButton.interactable = true;
+            if (answerInput != null) answerInput.interactable = true;
+
+            if (request.result == UnityWebRequest.Result.Success)
             {
-                GameResultManager.Instance.RecordCorrectAnswer(ParseDifficulty(activeQuestion.difficulty));
+                EvaluateResponse verdict = JsonUtility.FromJson<EvaluateResponse>(request.downloadHandler.text);
+
+                if (verdict != null && verdict.is_correct)
+                {
+                    HandleCorrectAnswer(question);
+                }
+                else
+                {
+                    string feedback = (verdict != null && !string.IsNullOrWhiteSpace(verdict.feedback))
+                        ? verdict.feedback
+                        : "Cevabını kontrol edip tekrar dene.";
+                    HandleWrongAnswer(question, feedback);
+                }
             }
-
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayDoorOpen();
-
-            if (openedDoorCount < totalDoorCount)
+            else if (request.responseCode == 502 || request.responseCode == 503)
             {
-                openedDoorCount++;
+                Debug.LogWarning("Gemini yoğunluk hatası: " + request.responseCode);
+                questionText.text = "<color=red>Yapay zeka şu an yoğun, tekrar Cevapla'ya bas!</color>\n\n" + question.question_text;
+                if (answerInput != null) answerInput.ActivateInputField();
             }
-            UpdateScoreUI();
-
-            remainingQuestions.Remove(activeQuestion);
-            if (currentDoor != null && assignedDoorQuestions.ContainsKey(currentDoor))
+            else
             {
-                assignedDoorQuestions.Remove(currentDoor);
+                Debug.LogWarning("Evaluate API error: " + request.responseCode + " - " + request.error);
+                questionText.text = "<color=red>Sunucuya ulaşılamadı, tekrar dene!</color>\n\n" + question.question_text;
+                if (answerInput != null) answerInput.ActivateInputField();
             }
-
-            activeQuestion = null;
-            ResetDoorDrawer();
-
-            if (hintPanel != null) hintPanel.SetActive(false);
-            questionPanel.SetActive(false);
-            Time.timeScale = 1;
-
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-
-            if (currentDoor != null) currentDoor.SendMessage(OpenDoorMessage, SendMessageOptions.DontRequireReceiver);
         }
-        else
+    }
+
+    private void HandleCorrectAnswer(QuestionData question)
+    {
+        if (GameResultManager.Instance != null)
         {
-            if (GameResultManager.Instance != null)
-            {
-                GameResultManager.Instance.RecordFailedAttempt();
-            }
+            GameResultManager.Instance.RecordCorrectAnswer(ParseDifficulty(question.difficulty));
+        }
 
-            if (shakeCoroutine != null) StopCoroutine(shakeCoroutine);
-            shakeCoroutine = StartCoroutine(ShakeEffect());
-            if (AudioManager.Instance != null) AudioManager.Instance.PlayWrong();
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayDoorOpen();
 
-            questionText.text = "<color=red>YANLIŞ CEVAP, TEKRAR DENE!</color>\n\n" + activeQuestion.question_text;
+        if (openedDoorCount < totalDoorCount)
+        {
+            openedDoorCount++;
+        }
+        UpdateScoreUI();
 
-            if (answerInput != null)
-            {
-                answerInput.text = "";
-                answerInput.ActivateInputField();
-            }
+        remainingQuestions.Remove(question);
+        if (currentDoor != null && assignedDoorQuestions.ContainsKey(currentDoor))
+        {
+            assignedDoorQuestions.Remove(currentDoor);
+        }
+
+        activeQuestion = null;
+        ResetDoorDrawer();
+
+        if (hintPanel != null) hintPanel.SetActive(false);
+        questionPanel.SetActive(false);
+        Time.timeScale = 1;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        if (currentDoor != null) currentDoor.SendMessage(OpenDoorMessage, SendMessageOptions.DontRequireReceiver);
+    }
+
+    private void HandleWrongAnswer(QuestionData question, string feedback)
+    {
+        if (GameResultManager.Instance != null)
+        {
+            GameResultManager.Instance.RecordFailedAttempt();
+        }
+
+        if (shakeCoroutine != null) StopCoroutine(shakeCoroutine);
+        shakeCoroutine = StartCoroutine(ShakeEffect());
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayWrong();
+
+        questionText.text = "<color=red>YANLIŞ CEVAP!</color>\n<color=#3A1F04><i>" + feedback + "</i></color>\n\n" + question.question_text;
+
+        if (answerInput != null)
+        {
+            answerInput.text = "";
+            answerInput.ActivateInputField();
         }
     }
 
@@ -322,6 +405,8 @@ public class QuestionManager : MonoBehaviour
 
     public void AbandonQuestion()
     {
+        if (isEvaluating) return;
+
         ResetDoorDrawer();
 
         if (hintPanel != null) hintPanel.SetActive(false);
@@ -337,7 +422,7 @@ public class QuestionManager : MonoBehaviour
 
     public void OpenHint()
     {
-        if (hintPanel == null || hintText == null) return;
+        if (isEvaluating || hintPanel == null || hintText == null) return;
 
         if (AudioManager.Instance != null)
         {
@@ -423,143 +508,6 @@ public class QuestionManager : MonoBehaviour
             return GameResultManager.QuestionDifficulty.Medium;
 
         return GameResultManager.QuestionDifficulty.Easy;
-    }
-
-    // --- CEVAP KONTROLÜ (SAYISAL AYRIŞTIRMA + LEVENSHTEIN) ---
-
-    // Metinden nokta/virgül karmaşasını çözerek sayı ayrıştıran yardımcı fonksiyon
-    private bool TryParseNumber(string text, out double value)
-    {
-        value = 0;
-        if (string.IsNullOrWhiteSpace(text)) return false;
-
-        string s = text.Trim().Replace(',', '.');
-        return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
-    }
-
-    private string CleanText(string text)
-    {
-        if (string.IsNullOrEmpty(text)) return "";
-
-        string cleaned = text.Trim();
-
-        cleaned = cleaned.Replace("İ", "i").Replace("I", "i");
-        cleaned = cleaned.ToLowerInvariant();
-
-        cleaned = cleaned.Replace('ı', 'i')
-                         .Replace('ğ', 'g')
-                         .Replace('ü', 'u')
-                         .Replace('ş', 's')
-                         .Replace('ö', 'o')
-                         .Replace('ç', 'c');
-
-        cleaned = Regex.Replace(cleaned, @"(?<=\d)\.(?=\d)", ",");
-
-        cleaned = Regex.Replace(cleaned, @"[\{\}\[\]\(\)]", "");
-        cleaned = Regex.Replace(cleaned, @"['""!?;:]", "");
-        cleaned = Regex.Replace(cleaned, @"\.(?!\d)", "");
-        cleaned = Regex.Replace(cleaned, @"\s+", " ");
-
-        return cleaned.Trim();
-    }
-
-    private bool IsAnswerCorrect(string playerText, string correctText)
-    {
-        if (string.IsNullOrWhiteSpace(playerText) || string.IsNullOrWhiteSpace(correctText)) return false;
-
-        string[] alternatives = correctText.Split('|');
-
-        foreach (string alternative in alternatives)
-        {
-            if (string.IsNullOrWhiteSpace(alternative)) continue;
-
-            // 1. KONTROL: SAYISAL CEVAP KİLİDİ
-            // Eğer veritabanındaki hedef cevap bir sayı ise (3.1417, 3.25 vb.)
-            if (TryParseNumber(alternative, out double targetNum))
-            {
-                if (TryParseNumber(playerText, out double playerNum))
-                {
-                    // Sayısal değerler 0.0001 hassasiyetle birebir eşit mi?
-                    if (Math.Abs(playerNum - targetNum) < 0.0001)
-                        return true;
-                }
-
-                // Hedef cevap sayıysa Levenshtein ve Contains ASLA ÇALIŞMAZ!
-                // Böylece 3.25 beklerken 3.29 giren oyuncu doğrudan elenir.
-                continue;
-            }
-
-            // 2. KONTROL: METİNSEL CEVAP (Pisagor, Hipotenüs vb. kelimeler için typo toleransı)
-            string cleanedPlayer = CleanText(playerText);
-            string cleanedTarget = CleanText(alternative);
-
-            // 2.1 Tam eşleşme
-            if (cleanedPlayer == cleanedTarget) return true;
-
-            // 2.2 Kapsama kontrolü
-            if (cleanedPlayer.Length >= 4 && cleanedTarget.Length >= 4)
-            {
-                if (cleanedPlayer.Contains(cleanedTarget) || cleanedTarget.Contains(cleanedPlayer))
-                {
-                    if (Mathf.Abs(cleanedPlayer.Length - cleanedTarget.Length) <= 4)
-                        return true;
-                }
-            }
-
-            // 2.3 Levenshtein benzerlik kontrolü
-            int distance = LevenshteinDistance(cleanedPlayer, cleanedTarget);
-            int maxLength = Mathf.Max(cleanedPlayer.Length, cleanedTarget.Length);
-
-            if (maxLength == 0) continue;
-
-            if (maxLength <= 3)
-            {
-                if (distance == 0) return true;
-            }
-            else if (maxLength <= 6)
-            {
-                if (distance <= 1) return true;
-            }
-            else if (maxLength <= 10)
-            {
-                if (distance <= 2) return true;
-            }
-            else
-            {
-                if (distance <= 3) return true;
-            }
-
-            float similarity = 1.0f - ((float)distance / maxLength);
-            if (similarity >= 0.65f) return true;
-        }
-
-        return false;
-    }
-
-    private int LevenshteinDistance(string s, string t)
-    {
-        if (string.IsNullOrEmpty(s)) return string.IsNullOrEmpty(t) ? 0 : t.Length;
-        if (string.IsNullOrEmpty(t)) return s.Length;
-
-        int n = s.Length;
-        int m = t.Length;
-        int[,] d = new int[n + 1, m + 1];
-
-        for (int i = 0; i <= n; i++) d[i, 0] = i;
-        for (int j = 0; j <= m; j++) d[0, j] = j;
-
-        for (int i = 1; i <= n; i++)
-        {
-            for (int j = 1; j <= m; j++)
-            {
-                int cost = (s[i - 1] == t[j - 1]) ? 0 : 1;
-                d[i, j] = Mathf.Min(
-                    Mathf.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
-                    d[i - 1, j - 1] + cost
-                );
-            }
-        }
-        return d[n, m];
     }
 
     private void UpdateScoreUI()
