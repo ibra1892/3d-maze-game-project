@@ -594,18 +594,26 @@ def _normalize_text(text):
 
 
 def _ask_gemini(prompt):
-    response = gemini_client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=EVALUATOR_SYSTEM_PROMPT,
-            temperature=0.0,
-            max_output_tokens=100,
-            response_mime_type="application/json",
-            response_schema=EvaluationResult,
-        ),
-    )
-    return json.loads(response.text)
+    models_to_try = list(dict.fromkeys([GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.5-flash-lite"]))
+    last_exc = None
+    for model_name in models_to_try:
+        try:
+            response = gemini_client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=EVALUATOR_SYSTEM_PROMPT,
+                    temperature=0.0,
+                    max_output_tokens=100,
+                    response_mime_type="application/json",
+                    response_schema=EvaluationResult,
+                ),
+            )
+            return json.loads(response.text)
+        except Exception as exc:
+            last_exc = exc
+            print(f"[GEMINI ROTATION - {model_name} atlandı] {exc}")
+    raise last_exc
 
 
 def _fallback_check(norm_student, ref_answer):
